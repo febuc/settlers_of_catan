@@ -1,0 +1,80 @@
+package controller;
+
+import application.GameStart;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import menu.ContinueMainMenu;
+import view.GameView;
+
+/**
+ * Activates the buttons of the continue main menu
+ * 
+ * @author Panos & Felicitas
+ *
+ */
+
+public final class ContinueMainMenuController {
+
+	/**
+	 * A reference to the menu that we want to check with this class
+	 */
+	private ContinueMainMenu continueMainMenu;
+
+	/**
+	 * Constructor of this menuController - it initializes the button events
+	 * 
+	 * @param continueMainMenu
+	 */
+	public ContinueMainMenuController(ContinueMainMenu continueMainMenu) {
+		this.continueMainMenu = continueMainMenu;
+		initializeButtonHandlers();
+		initializeButtonHoverHandler();
+	}
+
+	/**
+	 * Activates the buttons and reacts depending on which was pressed
+	 */
+	private void initializeButtonHandlers() {
+		continueMainMenu.getQuitButton().setOnMouseClicked(event -> {
+			if (GameStart.network != null)
+				GameStart.network.getConnectionHandler().disconnectFromServer();
+			System.exit(0);
+		});
+		continueMainMenu.getContinueButton().setOnMouseClicked(event -> {
+			GameStart.gameView.swapScenes(GameStart.gameView.getLayout());
+		});
+
+		continueMainMenu.getRulesButton().setOnMouseClicked(event -> {
+			showGameRules(GameStart.gameView);
+		});
+		continueMainMenu.getSettingsButton().setOnAction(event -> {
+			continueMainMenu.changeSettingsHBox();
+		});
+		continueMainMenu.getMusicVolumeSlider().valueProperty().addListener(new ChangeListener<Number>() {
+			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+				GameStart.soundManager.changeBackgroundMusicVolume((double) newValue);
+			}
+		});
+	}
+
+	/**
+	 * Activates an animation and a sound whenever somebody hovers over one of the
+	 * buttons
+	 */
+	private void initializeButtonHoverHandler() {
+		continueMainMenu.getContinueButton()
+				.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+		continueMainMenu.getRulesButton().setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+		continueMainMenu.getSettingsButton()
+				.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+		continueMainMenu.getQuitButton().setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+	}
+
+	/**
+	 * Shows the game rules screen if used
+	 */
+	private void showGameRules(GameView gameView) {
+		gameView.showGameRules();
+	}
+
+}

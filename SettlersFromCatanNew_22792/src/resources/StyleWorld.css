@@ -1,0 +1,39 @@
+#wayPoint {
+    -fx-background-color: 
+        rgb(195, 196, 196,0.4),
+        linear-gradient(#d6d6d6 50%, white 40%),
+        radial-gradient(center 50% -40%, radius 200%, #e6e6e6 45%, rgba(230,230,230,0) 50%);
+    -fx-background-radius: 30;
+    -fx-background-insets: 0,1,1;
+    -fx-text-fill: black;
+    -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.6) , 3, 0.0 , 0 , 1 );    
+}
+#wayPoint:hover {	 
+	 -fx-background-color: rgb(96, 94, 94)
+
+}
+#wayPoint:pressed {
+	-fx-background-color: #9bdb9e;
+}
+#hexagon{
+	 -fx-background-radius: 25em;
+	 -fx-background-color: transparent;
+}
+#hexagon:hover {	 
+}
+#street{
+    -fx-background-color: 
+        rgb(195, 196, 196,0.4),
+        linear-gradient(#d6d6d6 50%, white 40%),
+        radial-gradient(center 50% -40%, radius 200%, #e6e6e6 45%, rgba(230,230,230,0) 50%);
+    -fx-background-radius: 30;
+    -fx-background-insets: 0,1,1;
+    -fx-text-fill: black;
+    -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.6) , 3, 0.0 , 0 , 1 );
+    }
+#street:hover{
+	 -fx-background-color: rgb(96, 94, 94)
+}
+#street:pressed{
+	 -fx-background-color: rgb(66, 64, 64)
+}

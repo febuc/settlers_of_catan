@@ -1,0 +1,48 @@
+package networking.MessageObjects;
+
+import com.google.gson.annotations.SerializedName;
+
+import tools.WorldTranslation;
+
+/**
+ * This class represents the Port object type used in the client/server communication to exchange information about port's properties.
+ *
+ * @author Marcelina
+ */
+
+public class Port {
+    @SerializedName("Ort")
+    private Coordinates[] location = new Coordinates[2];
+    @SerializedName("Typ")
+    private String type;
+
+    /**
+     * constructor
+     *
+     * @param location localisation of the port (as defined in the client/server communication)
+     * @param type port type  - possible types being: holz hafen, lehm hafen, wolle hafen, erz hafen, getreide hafen, hafen
+     */
+    public Port(String location, String type) {
+        setLocation(location);
+        this.type = type;
+    }
+
+    public String getLocation() {
+        String letter = "";
+        letter += location[0].translateToLetter();
+        letter += location[1].translateToLetter();
+        return WorldTranslation.sortString(letter);
+    }
+    public void setLocation(String location) {
+        this.location[0] = new Coordinates(location.charAt(0)+"");
+        this.location[1] = new Coordinates(location.charAt(1)+"");
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getType() {
+        return type;
+    }
+}

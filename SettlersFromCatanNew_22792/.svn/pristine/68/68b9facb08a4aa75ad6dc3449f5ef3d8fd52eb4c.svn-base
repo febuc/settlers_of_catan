@@ -1,0 +1,222 @@
+package controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import application.GameStart;
+import gameobjects.Elements.Street;
+import gameworld.GameMatrixEntry;
+import gameworld.HexagonField;
+import gameworld.WayPoint;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import player.Player;
+import tools.BuildingType;
+import tools.FieldType;
+import tools.PortTypes;
+import view.GameView;
+
+/**
+ * Controlls the interactions of the user with the game(view)
+ *
+ * @author Jonas
+ */
+public final class GameViewController {
+	/**
+	 * The view of the game
+	 */
+	private GameView gameView;
+	/**
+	 * A list of all GameMatrixEntry of the gameView. Meaning all waypoints and
+	 * hexagonfields
+	 */
+	private GameMatrixEntry[][][] worldMatrix;
+	/**
+	 * A hash map (of the gameview), mapping buttons to the waypoints and hexagons
+	 */
+	private HashMap<GameMatrixEntry, Button> buttonsOfTheWorldMatrix;
+	/**
+	 * A hash map (of the gameview), mapping a button to every street
+	 */
+	private HashMap<Street, Button> buttonsOfTheStreets;
+	/**
+	 * A list of all streets of the gameView(but only in one direction)
+	 */
+	private ArrayList<Street> streets;
+
+	/**
+	 * Constructor. Already activates the buttons(GameMatrixEntry) of the gameView
+	 */
+	public GameViewController() {
+		this.gameView = GameStart.gameView;
+		worldMatrix = gameView.getActivGameMatrixEntries();
+		buttonsOfTheWorldMatrix = gameView.getButtonsOfTheWorldMatrix();
+		initializeActivGameMatrixEntries();
+		streets = gameView.getStreets();
+		buttonsOfTheStreets = gameView.getButtonsOfTheStreets();
+
+		// Assign actions/events to buttons
+		initializeStreetButtons();
+		initializeWayPointButtons();
+	}
+
+	/**
+	 * Activates the buttons and reacts depending on which was pressed or hovered
+	 * over
+	 */
+	private void initializeActivGameMatrixEntries() {
+		for (int row = worldMatrix.length - 1; row >= 0; row--) {
+			for (int column = 0; column < worldMatrix.length; column++) {
+				for (int i = 0; i < 3; i++) {
+					GameMatrixEntry gameMatrixEntry = worldMatrix[row][column][i];
+					Button button = buttonsOfTheWorldMatrix.get(gameMatrixEntry);
+					if (button == null)
+						continue;
+					if (i == 0) { // is a hexagon
+						// On mouse entered
+						button.setOnMouseClicked(e -> {
+							System.out.println(
+									gameMatrixEntry.getPosition().x + " " + gameMatrixEntry.getPosition().y + " ");
+							// System.out.println(GameStart.siedlerVonCatan.getPlayers().get(0).getStatus());
+							Integer id = GameStart.network.getConnectionHandler().getPlayerId();
+							// Check if definitely not allowed to construct a settlement
+							Player player = GameStart.siedlerVonCatan.findPlayerByID(id);
+                            HexagonField hexagonField = (HexagonField) gameMatrixEntry;
+							if (player != null && player.getStatus()!=null&& !player.getStatus().equals("Raeuber versetzen")
+									&& !player.isMoveThiefDueToKnightCard()) {
+								System.out.println("You are not allowed to move the Thief to a new location!");
+								System.out.println("You status is: " + player.getStatus() + " | Played a knight card: "
+										+ player.isMoveThiefDueToKnightCard());
+								return;
+							}
+							if(hexagonField.getFieldType() == FieldType.WATER || hexagonField.getFieldType() == FieldType.PORT){
+							    System.out.println("You selected a water or port field");
+                                System.out.println("Please select a non water or port field");
+							    return;
+                            }
+							displayAcceptButton(gameMatrixEntry, false);
+						});
+						button.setOnMouseEntered(e -> {
+							GameStart.soundManager.playSoundOnHexagonOver();
+							button.getGraphic().setOpacity(0.7);
+						});
+						// On mouse exit
+						button.setOnMouseExited(e -> {
+							button.getGraphic().setOpacity(1.0);
+						});
+						button.setOnMousePressed(e -> {
+							button.getGraphic().setOpacity(0.5);
+						});
+					}
+				}
+
+			}
+		}
+	}
+
+	/**
+	 * Activates the street buttons and reacts depending on what was pressed
+	 */
+	private void initializeStreetButtons() {
+		for (Street street : streets) {
+			Button button = buttonsOfTheStreets.get(street);
+			if (button != null) {
+				button.setOpacity(0.3);
+				button.setOnMouseClicked(event -> {
+					button.setOpacity(0.75);
+					// System.out.println(GameStart.siedlerVonCatan.getPlayers().get(0).getStatus());
+					Integer id = GameStart.network.getConnectionHandler().getPlayerId();
+
+					// Check if definitely not allowed to construct a settlement
+					Player player = GameStart.siedlerVonCatan.findPlayerByID(id);
+
+					// for testing
+					System.out.println(street.getConnectionPoints()[0].toString() + " | "
+							+ street.getConnectionPoints()[1].toString());
+
+					if (player != null) {
+						if (player.getStatus().equals("Handeln oder Bauen") 
+								|| (player.getStatus().equals("Wuerfeln") && GameStart.siedlerVonCatan.isRoadBuildingCardPlayed())) {
+							displayAcceptButton(street, false);
+						} else if (player.getStatus().equals("Strasse bauen")) {
+							// No need to check anything else since we can build a free village
+							displayAcceptButton(street, true);
+						} else {
+							Platform.runLater(() -> GameStart.gameView
+									.displayLargeErrorMessage("You are not allowed to build streets now!"));
+							// System.out.println("You are not allowed to build any streets right now!");
+							return;
+						}
+					}
+
+				});
+				button.setOnMouseEntered(e -> {
+					button.setOpacity(1);
+				});
+				button.setOnMouseExited(e -> {
+					button.setOpacity(0.9);
+				});
+			}
+		}
+	}
+
+	/**
+	 * Activates the wayPoint buttons and reacts depending on what was pressed
+	 */
+	private void initializeWayPointButtons() {
+		for (WayPoint wp : GameStart.gameView.getWayPointsList()) {
+			Button button = buttonsOfTheWorldMatrix.get(wp);
+			if (button != null) {
+				button.setOnMouseClicked(event -> {
+					// Play Sound
+					GameStart.soundManager.OnWayPointHover();
+
+					// System.out.println(GameStart.siedlerVonCatan.getPlayers().get(0).getStatus());
+					Integer id = GameStart.network.getConnectionHandler().getPlayerId();
+					// Check if definitely not allowed to construct a settlement
+					Player player = GameStart.siedlerVonCatan.findPlayerByID(id);
+					if (player != null) {
+						if (player.getStatus().equals("Handeln oder Bauen")) {
+							// Check for displaying ports
+							if (wp.getSettlement().getOwnerID() == GameStart.network.getConnectionHandler()
+									.getPlayerId() || wp.getSettlement().getBuildingType() == BuildingType.NONE) {
+								if (wp.getPortType() != PortTypes.NONE & wp.getSettlement().getBuildingType() != BuildingType.NONE)
+									GameStart.gameView.drawBankTrading(wp.getPortType());
+								displayAcceptButton(wp, false);
+							}
+						} else if (player.getStatus().equals("Dorf bauen")) {
+							// No need to check anything else since we can build a free village
+							displayAcceptButton(wp, true);
+						} else {
+							if (wp.getSettlement().getOwnerID() == GameStart.network.getConnectionHandler()
+									.getPlayerId())
+								Platform.runLater(() -> GameStart.gameView
+										.displayLargeErrorMessage("You are not allowed to build or trade right now!"));
+							else
+								Platform.runLater(() -> GameStart.gameView.displayLargeErrorMessage(
+										"You are not allowed to build settlements right now!"));
+							// System.out.println("You are not allowed to build any settlements right
+							// now!");
+							return;
+						}
+						// for testing
+						System.out.println(wp.toString());
+					}
+				});
+			}
+		}
+	}
+
+	/**
+	 * Display "accept" notification to confirm
+	 */
+	private void displayAcceptButton(Object o, boolean freeCost) {
+		try {
+			GameStart.gameView.displayAcceptButton(o, freeCost);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+}

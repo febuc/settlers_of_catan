@@ -1,0 +1,182 @@
+package networking.MessageObjects;
+
+import com.google.gson.annotations.SerializedName;
+
+/**
+ * Class representing the message type object used to send information about
+ * resources held/received by the user.
+ * 
+ * @author Marcelina
+ */
+
+public class Resources {
+	@SerializedName("Holz")
+	private Integer wood;
+	@SerializedName("Lehm")
+	private Integer loam;
+	@SerializedName("Wolle")
+	private Integer wool;
+	@SerializedName("Getreide")
+	private Integer grain;
+	@SerializedName("Erz")
+	private Integer stone;
+	@SerializedName("Unbekannt")
+	private Integer hidden;
+
+	public Resources(Integer wood, Integer loam, Integer wool, Integer grain, Integer stone, Integer hidden) {
+		this.wood = wood;
+		this.loam = loam;
+		this.wool = wool;
+		this.grain = grain;
+		this.stone = stone;
+		this.hidden = hidden;
+	}
+
+	public void substractFromResources(Resources resources) {
+		this.wood -= resources.getWood();
+		this.loam -= resources.getLoam();
+		this.wool -= resources.getWool();
+		this.grain -= resources.getGrain();
+		this.stone -= resources.getStone();
+		this.hidden = getTotalResources();
+	}
+
+	public void addToResources(Resources resources) {
+		this.wood += resources.getWood();
+		this.loam += resources.getLoam();
+		this.wool += resources.getWool();
+		this.grain += resources.getGrain();
+		this.stone += resources.getStone();
+		this.hidden = getTotalResources();
+	}
+
+	public String toString() {
+		return "{" + wood + "," + loam + "," + wool + "," + grain + "," + stone + "," + hidden + "}";
+	}
+
+	public Integer getWood() {
+		if (wood==null) return 0;
+		return wood;
+	}
+
+	public void setWood(Integer wood) {
+		this.wood = wood;
+	}
+
+	public Integer getLoam() {
+		if(loam == null) return 0;
+		return loam;
+	}
+
+	public void setLoam(Integer loam) {
+		this.loam = loam;
+	}
+
+	public Integer getWool() {
+		if(wool == null) return 0;
+		return wool;
+	}
+
+	public void setWool(Integer wool) {
+		this.wool = wool;
+	}
+
+	public Integer getGrain() {
+		if(grain==null) return 0;
+		return grain;
+	}
+
+	public void setGrain(Integer grain) {
+		this.grain = grain;
+	}
+
+	public Integer getStone() {
+		if(stone==null) return 0;
+		return stone;
+	}
+
+	public void setStone(Integer stone) {
+		this.stone = stone;
+	}
+
+	public Integer getHidden() {
+		if(hidden ==null) return 0;
+		return hidden;
+	}
+
+	public void setHidden(Integer hidden) {
+		this.hidden = hidden;
+	}
+
+	public int getTotalResources() {
+		return getLoam() + getWool() + getWood() + getGrain() + getStone();
+	}
+
+	/**
+	 * "Holz" "Lehm" "Wolle" "Getreide" "Erz" "Unbekannt"
+	 */
+	public int getResource(String resource) {
+		switch (resource) {
+		case "Holz":
+			return getWood();
+		case "Wolle":
+			return getWool();
+		case "Erz":
+			return getStone();
+		case "Lehm":
+			return getLoam();
+		case "Getreide":
+			return getGrain();
+		case "Unbekannt":
+			return getHidden();
+		}
+		System.out.println("Wrong input at getResource()");
+		return -1;
+	}
+
+	/**
+	 * "Holz" "Lehm" "Wolle" "Getreide" "Erz" "Unbekannt"
+	 */
+	public void addResource(String resource, int amount) {
+		switch (resource) {
+		case "Holz":
+			setWood(getWood() + amount);
+			break;
+		case "Wolle":
+			setWool(getWool() + amount);
+			break;
+		case "Erz":
+			setStone(getStone() + amount);
+			break;
+		case "Lehm":
+			setLoam(getLoam() + amount);
+			break;
+		case "Getreide":
+			setGrain(getGrain() + amount);
+			break;
+		case "Unbekannt":
+			setHidden(getHidden() + amount);
+		}
+	}
+
+//	/**
+//	 *
+//	 * @return True, if the received cost is a cost for a building or
+//	 *         developmentcard
+//	 */
+//	public boolean isBuildingCost() {
+//		boolean isStreetCost = this.getWood() == 1 && this.getLoam() == 1 && this.getGrain() == 0
+//				&& this.getStone() == 0 && this.getWool() == 0;
+//
+//		boolean isVillageCost = this.getWood() == 1 && this.getLoam() == 1 && this.getGrain() == 1
+//				&& this.getStone() == 0 && this.getWool() == 1;
+//
+//		boolean isCastleCost = this.getWood() == 0 && this.getLoam() == 0 && this.getGrain() == 2
+//				&& this.getStone() == 3 && this.getWool() == 0;
+//
+//		boolean isDevelopmentCost = this.getWood() == 0 && this.getLoam() == 0 && this.getGrain() == 1
+//				&& this.getStone() == 1 && this.getWool() == 1;
+//
+//		return isStreetCost || isVillageCost || isCastleCost || isDevelopmentCost;
+//	}
+}

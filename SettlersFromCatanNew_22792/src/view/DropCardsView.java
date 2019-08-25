@@ -1,0 +1,262 @@
+package view;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+
+import application.GameStart;
+import controller.DropCardsController;
+import gameobjects.Cards.ResourceCard;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import networking.MessageObjects.Resources;
+import networking.MessageObjects.ResourcesReturned;
+import player.Player;
+import tools.ResourceType;
+import tools.Styling;
+
+/**
+ * Creates a view for the "drop cards" interface.
+ *
+ * @author Felip
+ */
+public class DropCardsView {
+
+	/**
+	 * Our main layout (Pane).
+	 */
+	private VBox layout;
+
+	/**
+	 * HBox containing all "card-views" from "cardsToDrop".
+	 */
+	private HBox resourcesToDrop;
+
+	/**
+	 * A set containing all cards to drop.
+	 */
+	private HashSet<ResourceCard> cradsToDrop;
+
+	/**
+	 * The corresponding controller.
+	 */
+	private DropCardsController dropCardsController;
+
+	/**
+	 * A label, indicating how many cards we still have to drop.
+	 */
+	private Label youPayLabel;
+
+	/**
+	 * Indicates how many cards we (still) have to drop.
+	 */
+	private int numberOfCardsToDrop;
+
+	/**
+	 * Button used to accept the transaction
+	 */
+	private Button acceptButton;
+
+	/**
+	 * Holds all initial cards
+	 */
+	private HBox resources;
+
+	/**
+	 * Constructor.
+	 */
+	public DropCardsView() {
+		layout = new VBox(30);
+		generateWindow();
+
+	}
+
+	private void generateWindow() {
+		cradsToDrop = new HashSet<>();
+		numberOfCardsToDrop = 0;
+		Label headerLabel = new Label("Drop 50%");
+		Player player = GameStart.siedlerVonCatan
+				.findPlayerByID(GameStart.network.getConnectionHandler().getPlayerId());
+		numberOfCardsToDrop = player.getTotalNumberOfResources() % 2 == 0
+				? player.getTotalNumberOfResources() / 2
+				: (player.getTotalNumberOfResources() - 1) / 2;
+		youPayLabel = new Label("You need to drop " + numberOfCardsToDrop + " cards...");
+		Label youGetLabel = new Label("Your cards:");
+
+		// Define accept & decline button
+		acceptButton = new Button("Accept");
+		Button refuseButton = new Button("Reset");
+		// Add controller to accept and decline button
+		dropCardsController = new DropCardsController(acceptButton, refuseButton, this);
+
+		double screenWidth = GameStart.gameView.getMainGameScene().getWidth();
+		double screenHeight = GameStart.gameView.getMainGameScene().getHeight();
+
+		resources = createHbox(player.getResources());
+		resourcesToDrop = new HBox(10);
+		resourcesToDrop.setAlignment(Pos.CENTER);
+		layout.setId("roundedWindow");
+		// layout.setBackground(new Background(new BackgroundFill(new Color(0.2863,
+		// 0.2902, 0.2902, 0.9059), null, null)));
+		layout.setEffect(GameStart.gameView.getDropShadowHexagon());
+
+		// Style labels
+		Styling.styleLabel(headerLabel, screenHeight / 30);
+		Styling.styleLabel(youPayLabel, screenHeight / 45);
+		Styling.styleLabel(youGetLabel, screenHeight / 45);
+
+		// Add to main layout and set size
+		layout.setAlignment(Pos.BASELINE_CENTER);
+		layout.setMinSize(screenWidth / 2.6, screenHeight * 11 / 18);
+		layout.setMaxSize(screenWidth / 2.6, screenHeight * 11 / 18);
+
+		acceptButton.setDisable(true);
+
+		refuseButton.setTextFill(Color.BROWN);
+		acceptButton.setTextFill(Color.DARKSEAGREEN);
+
+		Styling.styleButton(acceptButton, screenHeight / 35);
+		Styling.styleButton(refuseButton, screenHeight / 35);
+		HBox hBoxButtons = new HBox(30);
+		hBoxButtons.getChildren().addAll(acceptButton, refuseButton);
+		hBoxButtons.setAlignment(Pos.CENTER);
+		layout.getChildren().addAll(headerLabel, youPayLabel, resources, youGetLabel, resourcesToDrop, hBoxButtons);
+		layout.relocate(screenWidth / 2 - layout.getMinWidth() / 2, screenHeight / 2 - layout.getMinHeight() / 2);
+
+	}
+
+	/**
+	 * Resets the thief window
+	 */
+	public void reset() {
+		layout.getChildren().clear();
+		generateWindow();
+	}
+
+	/**
+	 * Closes the window and sends a request to the server.
+	 */
+	public void accept() {
+		// Remove from main game view layout
+		GameStart.gameView.getLayout().getChildren().remove(layout);
+		// Send request to server
+		Integer wood = 0;
+		Integer loam = 0;
+		Integer wool = 0;
+		Integer grain = 0;
+		Integer stone = 0;
+		for (Iterator<ResourceCard> it = cradsToDrop.iterator(); it.hasNext();) {
+			ResourceCard cardToDrop = it.next();
+			switch (cardToDrop.getResourceType()) {
+			case GRAIN:
+				grain = cardToDrop.getCardView().countToInt();
+				break;
+			case LOAM:
+				loam = cardToDrop.getCardView().countToInt();
+				break;
+			case STONE:
+				stone = cardToDrop.getCardView().countToInt();
+				break;
+			case WOOD:
+				wood = cardToDrop.getCardView().countToInt();
+				break;
+			case WOOL:
+				wool = cardToDrop.getCardView().countToInt();
+				break;
+			default:
+				break;
+			}
+		}
+		// Resources(Integer wood, Integer loam, Integer wool, Integer grain, Integer
+		// stone, Integer hidden)
+		Resources resources = new Resources(wood, loam, wool, grain, stone, 0);
+		GameStart.network.getClientProtocol().requestResourceCardsReturned(new ResourcesReturned(resources));
+		//the next line is now called in clientprotocol! (we first need to substract the resources
+		//GameStart.gameView.updateResourceCardView();
+		// Display message that we are waiting for the other players to drop half of
+		// their cards...
+		GameStart.gameView.displayLargePersistentMessage("Waiting for other players to drop half of their cards...");
+	}
+
+	/**
+	 * Draws trade resources to the screen
+	 *
+	 * @param hashMap
+	 */
+	public HBox createHbox(HashMap<ResourceType, Integer> hashMap) {
+		// Display cards
+		HBox hBox = new HBox(10);
+		hBox.setAlignment(Pos.CENTER);
+		for (ResourceType type : hashMap.keySet()) {
+			int count = hashMap.get(type);
+			if (type == ResourceType.HIDDEN || count <= 0)
+				continue;
+			count = hashMap.get(type);
+			ResourceCard card = new ResourceCard(type);
+			card.getCardView().updateCountLabel(count);
+			hBox.getChildren().add(card.getCardView().getLayout());
+			// Define controller
+			dropCardsController.defineCardAction(card);
+		}
+		return hBox;
+	}
+
+	/**
+	 * Updates and/or sets a card to drop and displays it on the scene view.
+	 *
+	 * @param card
+	 */
+	public void UpdateCardsToDrop(ResourceCard card) {
+		// Quit if we don't need to drop any more cards.
+		if (numberOfCardsToDrop == 0)
+			return;
+
+		card.getCardView().updateCountLabel(card.getCardView().countToInt() - 1);
+		// Disable if needed
+		if (card.getCardView().countToInt() <= 0)
+			card.getCardView().getCardButton().setDisable(true);
+
+		// Check if card already in the set
+		if (!cradsToDrop.contains(card)) {
+			ResourceCard resourceCardToDrop = new ResourceCard(card.getResourceType());
+			resourceCardToDrop.getCardView().updateCountLabel(0);
+			resourcesToDrop.getChildren().add(resourceCardToDrop.getCardView().getLayout());
+			cradsToDrop.add(resourceCardToDrop);
+		}
+		for (Iterator<ResourceCard> it = cradsToDrop.iterator(); it.hasNext();) {
+			ResourceCard cardToDrop = it.next();
+			if (cardToDrop.getResourceType() == card.getResourceType())
+				cardToDrop.getCardView().updateCountLabel(cardToDrop.getCardView().countToInt() + 1);
+		}
+		numberOfCardsToDrop -= 1;
+		if (numberOfCardsToDrop == 0) {
+			youPayLabel.setText("Alright, that's enough for now...");
+			// Disable all other buttons
+			resources.getChildren().forEach(e -> {
+				VBox vbox = (VBox) e;
+				vbox.getChildren().forEach(e2 -> {
+					e2.setDisable(true);
+					e2.setOpacity(0.3f);
+				});
+			});
+			// Activate accept button
+			acceptButton.setDisable(false);
+		} else
+			youPayLabel.setText("You still have to drop " + numberOfCardsToDrop
+					+ (numberOfCardsToDrop == 1 ? " card" : " cards") + "...");
+	}
+
+	/**
+	 * Returns the layout containing all nodes for the drop card view.
+	 *
+	 * @return layout
+	 */
+	public VBox getLayout() {
+		return layout;
+	}
+
+}

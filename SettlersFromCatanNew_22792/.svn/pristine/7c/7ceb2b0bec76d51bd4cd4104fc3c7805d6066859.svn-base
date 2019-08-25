@@ -1,0 +1,326 @@
+package gameplay;
+
+import gameobjects.GameObject;
+import gameobjects.Elements.Street;
+import gameobjects.Elements.Thief;
+import gameworld.WayPoint;
+import gameworld.World;
+import player.Player;
+import tools.PlayerTeam;
+import tools.Vector2D;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+
+import networking.MessageObjects.PlayerForProtocol;
+import application.GameStart;
+import controller.GameViewController;
+
+/**
+ * Simulates the entire game "Siedler Von Catan" Creates dices, a game area, the
+ * game objects and everything needed for the game.
+ */
+public class SiedlerVonCatan {
+	/**
+	 * Includes all the in game fields from the game. Once created should not be
+	 * modified.
+	 */
+	private World gameWorld;
+	/**
+	 * Simulates a pair of two dices
+	 */
+	private Dice dice;
+	/**
+	 * A list of all the game objects (Note that area field do not count as game
+	 * "objects"!)
+	 */
+	private ArrayList<GameObject> gameObjects;
+
+	/**
+	 * List of players
+	 */
+	private ArrayList<Player> playerList;
+
+	/**
+	 * True if we play the SinglePlayer mode.
+	 */
+	private boolean isSinglePlayer;
+
+	/**
+	 * Represents the thief in game
+	 */
+	private Thief thief;
+	/**
+	 * Indicates whether the roadBuildingCard was just played
+	 */
+	private boolean roadBuildingCardPlayed;
+
+	/**
+	 * True if the game is ready to be started
+	 */
+	private boolean readyToStart;
+
+	/**
+	 * True if we are in the initial building phase
+	 */
+	private boolean initialPhase;
+	
+	/**
+	 * list which saves for every trade how many players already rejected it
+	 */
+	public ArrayList<Integer> playersWhoRejectedTrade=new ArrayList<Integer>();
+
+	/**
+	 * list which saves for every trade how many players already rejected it right away (decline button)
+	 */
+	public ArrayList<Integer> playersWhoRejectedTradeRightAway=new ArrayList<Integer>();
+	/**
+	 * Class constructor which creates the game objects we need for the game. This
+	 * includes: +Dices +World +GameObjects (as a list) +List of players
+	 */
+	public SiedlerVonCatan() {
+		initialPhase = true;
+		readyToStart = false;
+		dice = new Dice();
+		gameWorld = new World();
+		gameObjects = new ArrayList<GameObject>();
+		thief = new Thief(new Vector2D<Integer>(3, 3));
+		setPlayers(new ArrayList<Player>());
+	}
+
+	/**
+	 * Initializes the world drawing procedure and creates a game view controller
+	 */
+	public void drawGameWorld() {
+		// Draw the world layout
+		GameStart.gameView.drawWorld(gameWorld);
+		// Create controller
+		new GameViewController();
+	}
+
+	/**
+	 * Adds a new player to the list.
+	 * 
+	 * @param player
+	 *            The new player to be added to the list.
+	 */
+	public void addPlayer(Player player) {
+		System.out.println("Player: " + player.getPlayerID() + " added");
+		this.playerList.add(player);
+		System.out.println(playerList.size());
+	}
+
+	// Getters
+
+	/**
+	 * Returns the game dices
+	 * 
+	 * @return dices
+	 */
+	public Dice getDices() {
+		return dice;
+	}
+
+	/**
+	 * Returns a list containing all game objects. (Note that area field do not
+	 * count as game objects!)
+	 * 
+	 * @return gameObjects
+	 */
+	public ArrayList<GameObject> getGameObjects() {
+		return gameObjects;
+	}
+
+	/**
+	 * Getter for the player list.
+	 * 
+	 * @return players
+	 */
+	public ArrayList<Player> getPlayers() {
+		return playerList;
+	}
+
+	/**
+	 * Setter for the player list.
+	 * 
+	 * @param players
+	 *            The new player list.
+	 */
+	public void setPlayers(ArrayList<Player> players) {
+		this.playerList = players;
+	}
+
+	/**
+	 * Finds a PlayerForProtocol with a given id in the list if exits (else null).
+	 * 
+	 * @param id
+	 *            The id of the player we are searching for.
+	 */
+	public Player findPlayerByID(Integer id) {
+		if(id == null)
+			return null;
+		ArrayList<Player> playerListCopy = (ArrayList<Player>) playerList.clone();
+		for (Player player : playerListCopy) {
+			if (player.getPlayerID() == id)
+				return player;
+		}
+		return null;
+	}
+
+	/**
+	 * Finds a PlayerForProtocol with a given color in the list if exits (else
+	 * null).
+	 * 
+	 * @param color
+	 *            The id of the player we are searching for.
+	 */
+	public Player findPlayerByColor(PlayerTeam color) {
+		System.out.println("wir printen jz"+playerList.size());
+		for (Player player : playerList) {
+			System.out.println(player.getName());
+		}
+		for (Player player : playerList) {
+			System.out.println(player.getName());
+			System.out.println(color.toString());
+			System.out.println(player.getTeam().toString());
+			if (player.getTeam() == color)
+				return player;
+		}
+		System.out.println("WARNING: NO MATCHING COLOR FOUND IN :" + playerList);
+		return null;
+	}
+
+	/**
+	 * Getter method for singlePlayer
+	 * 
+	 * @return isSinglePlayer
+	 */
+	public boolean isSinglePlayer() {
+		return isSinglePlayer;
+	}
+
+	/**
+	 * Setter method for singlePlayer
+	 * 
+	 * @param singlePlayer
+	 */
+	public void setSinglePlayer(boolean singlePlayer) {
+		isSinglePlayer = singlePlayer;
+	}
+
+	/**
+	 * Getter method for the gameWorld
+	 * 
+	 * @return gameWorld
+	 */
+	public World getGameWorld() {
+		return gameWorld;
+	}
+
+	/**
+	 * Getter method for the thief
+	 * 
+	 * @return thief
+	 */
+	public Thief getThief() {
+		return thief;
+	}
+
+	/**
+	 * Getter method for the roadBuildingCardPlayed
+	 * 
+	 * @return roadBuildingCardPlayed
+	 */
+	public boolean isRoadBuildingCardPlayed() {
+		return roadBuildingCardPlayed;
+	}
+
+	/**
+	 * Setter method for the roadBuildingCardPlayed
+	 * 
+	 * @param roadBuildingCardPlayed
+	 */
+	public void setRoadBuildingCardPlayed(boolean roadBuildingCardPlayed) {
+		this.roadBuildingCardPlayed = roadBuildingCardPlayed;
+	}
+
+	/**
+	 * Marks the game as "ready to start"
+	 */
+	public void readyToStart() {
+		readyToStart = true;
+	}
+
+	/**
+	 * @return if game is ready to start
+	 */
+	public boolean isReadyToStart() {
+		return readyToStart;
+	}
+
+	/**
+	 *
+	 * @return if we are in the initialPhase
+	 */
+	public boolean isInitialStartPhase() {
+		return initialPhase;
+	}
+
+	/**
+	 * Setter method for the initial building phase
+	 * @param initialPhase
+	 */
+	public void setInitialStartPhase(boolean initialPhase) {
+		this.initialPhase = initialPhase;
+	}
+	
+	/**
+	 * method used to check whether there is still place to build a street - in case a player who plays out a roadbuilding card only
+	 * has place on the map for one more street (instead of 2)
+	 * @param firstRoadBuildingCardStreet the first chosen street (it is possible the first street creates the only possibility for the second street
+	 * @return true if there is no more space for a street of this player
+	 */
+	public boolean noMoreStreetSpace(Street firstRoadBuildingCardStreet) {
+		int playerId = GameStart.network.getConnectionHandler().getPlayerId();
+		for (WayPoint wp : gameWorld.getWayPoints()){
+			if(wp.getSettlement()!=null){
+				if(wp.getSettlement().getOwnerID()!=null){
+					if(wp.getSettlement().getOwnerID()==playerId){
+						for(WayPoint wp1 : wp.getWayPointNeighbours()){
+							if(!wp.getStreetConnectedWaypoints().contains(wp1)
+								&&!(Arrays.deepEquals(firstRoadBuildingCardStreet.getConnectionPoints(),new WayPoint[]{wp1,wp}))
+							&&!(Arrays.deepEquals(firstRoadBuildingCardStreet.getConnectionPoints(),new WayPoint[]{wp,wp1}))){
+								return false;
+							}
+						}
+					}
+				}
+			}
+		}
+		gameWorld.getStreets().add(firstRoadBuildingCardStreet);
+		for(Street st : gameWorld.getStreets()){
+			if(st==firstRoadBuildingCardStreet||(st.getOwnerID()!=null&&st.getOwnerID()==playerId)){
+					for(WayPoint wp : st.getConnectionPoints()[0].getWayPointNeighbours()){
+						if(!st.getConnectionPoints()[0].getStreetConnectedWaypoints().contains(wp)
+								&&!(Arrays.deepEquals(firstRoadBuildingCardStreet.getConnectionPoints(),new WayPoint[]{st.getConnectionPoints()[0],wp})
+						&&!(Arrays.deepEquals(firstRoadBuildingCardStreet.getConnectionPoints(),new WayPoint[]{wp,st.getConnectionPoints()[0]})))){
+							gameWorld.getStreets().remove(firstRoadBuildingCardStreet);
+							return false;
+						}
+					}
+					for(WayPoint wp : st.getConnectionPoints()[1].getWayPointNeighbours()){
+						if(!st.getConnectionPoints()[1].getStreetConnectedWaypoints().contains(wp)
+								&&!(Arrays.deepEquals(firstRoadBuildingCardStreet.getConnectionPoints(),new WayPoint[]{st.getConnectionPoints()[1],wp}))
+						&&!(Arrays.deepEquals(firstRoadBuildingCardStreet.getConnectionPoints(),new WayPoint[]{wp,st.getConnectionPoints()[1]}))){
+							gameWorld.getStreets().remove(firstRoadBuildingCardStreet);
+							return false;
+						}
+					}
+			}
+		}
+
+		gameWorld.getStreets().remove(firstRoadBuildingCardStreet);
+		return true;
+	}
+}

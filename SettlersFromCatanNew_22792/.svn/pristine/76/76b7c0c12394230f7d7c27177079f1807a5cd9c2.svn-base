@@ -1,0 +1,243 @@
+package controller;
+
+import application.GameStart;
+import gameplay.SiedlerVonCatan;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import player.Computer;
+import player.Human;
+import player.Player;
+import tools.PlayerTeam;
+
+import java.util.ArrayList;
+
+/**
+ * Controls the interactions of the user in the game set up scene.
+ *
+ * @author Felip
+ */
+public final class GameSetUpController {
+
+	/**
+	 * True if we are playing in Single player mode
+	 */
+	private boolean isSingleplayer;
+	/**
+	 * The player's chosen team
+	 */
+	private PlayerTeam team;
+	/**
+	 * Our main default player (with game view)
+	 */
+	private Player player;
+
+	/**
+	 * Constructor (assigns all actions to the buttons).
+	 *
+	 * @param isOnline
+	 *            Do we play online or singleplayer
+	 * @param toMainMenu
+	 *            The go-back-to-main-menu button
+	 * @param playButton -- start game button
+	 * @param vboxRed
+	 * @param vboxWhite
+	 * @param vboxBlue
+	 * @param vboxOrange
+	 * @param textField
+	 * @param label
+	 * @param buttonHuman
+	 * @param buttonPC
+	 */
+	public GameSetUpController(boolean isOnline, Button toMainMenu, Button playButton, VBox vboxRed, VBox vboxWhite,
+			VBox vboxBlue, VBox vboxOrange, TextField textField, Button label, RadioButton buttonHuman,
+			RadioButton buttonPC, Button startOnlineMatch) {
+
+		isSingleplayer = !isOnline;
+		// Set default team = Team.Orange
+		team = PlayerTeam.TEAM_ORANGE;
+		toMainMenu.setOnMouseClicked(e -> {
+			// Get back to the main menu
+			GameStart.gameView.createMainMenuScene();
+			// Disconnect from server when leaving the game lobby
+			GameStart.network.disconnectFromServer();
+		});
+		playButton.setOnMouseClicked(e -> {
+			initializeNewGame(buttonHuman.isSelected(), textField.getText());
+
+			// Disable not needed buttons
+			toMainMenu.setDisable(true);
+			playButton.setDisable(true);
+			vboxRed.getChildren().forEach(c -> {
+				if (c.getId().equals("avatar"))
+					c.setOpacity(0.3);
+				c.setDisable(true);
+			});
+			vboxWhite.getChildren().forEach(c -> {
+				if (c.getId().equals("avatar"))
+					c.setOpacity(0.3);
+				c.setDisable(true);
+			});
+			vboxOrange.getChildren().forEach(c -> {
+				if (c.getId().equals("avatar"))
+					c.setOpacity(0.3);
+				c.setDisable(true);
+			});
+			vboxBlue.getChildren().forEach(c -> {
+				if (c.getId().equals("avatar"))
+					c.setOpacity(0.3);
+				c.setDisable(true);
+			});
+			textField.setDisable(true);
+			buttonHuman.setDisable(true);
+			buttonPC.setDisable(true);
+
+			// Create player Object
+			// If online, disable buttons
+			if (isOnline) {
+				label.setText("Waiting for the other players...");
+				startOnlineMatch.setDisable(false);
+			}
+			// If single player, then draw the game world
+			else {
+				label.setText("Loading game, please wait...");
+				setUpSinglePlayerGame();
+			}
+		});
+
+		vboxOrange.getChildren().forEach(c -> c.setOnMouseClicked(e -> {
+			vboxOrange.getChildren().forEach(c2 -> {
+				if (c2.getId().equals("avatar"))
+					c2.setOpacity(0.5);
+			});
+			team = PlayerTeam.TEAM_ORANGE;
+			vboxRed.getChildren().forEach(v -> {if(!v.isDisabled()) v.setOpacity(1);});
+			vboxWhite.getChildren().forEach(v ->{ if(!v.isDisabled())  v.setOpacity(1);});
+			vboxBlue.getChildren().forEach(v ->{ if(!v.isDisabled())  v.setOpacity(1);});
+		}));
+		vboxRed.getChildren().forEach(c -> c.setOnMouseClicked(e -> {
+			vboxRed.getChildren().forEach(c2 -> {
+				if (c2.getId().equals("avatar"))
+					c2.setOpacity(0.5);
+			});
+			team = PlayerTeam.TEAM_RED;
+			vboxWhite.getChildren().forEach(v ->{ if(!v.isDisabled()) v.setOpacity(1);});
+			vboxOrange.getChildren().forEach(v ->{ if(!v.isDisabled())  v.setOpacity(1);});
+			vboxBlue.getChildren().forEach(v ->{ if(!v.isDisabled())  v.setOpacity(1);});
+		}));
+		vboxWhite.getChildren().forEach(c -> c.setOnMouseClicked(e -> {
+			vboxWhite.getChildren().forEach(c2 -> {
+				if (c2.getId().equals("avatar"))
+					c2.setOpacity(0.5);
+			});
+			team = PlayerTeam.TEAM_WHITE;
+			vboxRed.getChildren().forEach(v ->{ if(!v.isDisabled())  v.setOpacity(1);});
+			vboxOrange.getChildren().forEach(v -> {if(!v.isDisabled())  v.setOpacity(1);});
+			vboxBlue.getChildren().forEach(v -> {if(!v.isDisabled())  v.setOpacity(1);});
+		}));
+		vboxBlue.getChildren().forEach(c -> c.setOnMouseClicked(e -> {
+			vboxBlue.getChildren().forEach(c2 -> {
+				if (c2.getId().equals("avatar"))
+					c2.setOpacity(0.5);
+			});
+			team = PlayerTeam.TEAM_BLUE;
+			vboxRed.getChildren().forEach(v ->{ if(!v.isDisabled())  v.setOpacity(1);});
+			vboxWhite.getChildren().forEach(v -> {if(!v.isDisabled())  v.setOpacity(1);});
+			vboxOrange.getChildren().forEach(v -> {if(!v.isDisabled())  v.setOpacity(1);});
+		}));
+		startOnlineMatch.setOnMouseClicked(e -> {
+			label.setText("Waiting for the server to start...");
+			startOnlineMatch.setDisable(true);
+			// Send a request to the server to start the game
+			sendStartGameRequest();
+		});
+		// Set up hover
+		startOnlineMatch.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		toMainMenu.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		playButton.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		vboxOrange.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		vboxRed.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		vboxWhite.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		vboxBlue.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+		toMainMenu.setOnMouseEntered(e -> GameStart.soundManager.playSoundOnButtonHover());
+	}
+
+	/**
+	 * Initializes/creates an entirely new game and assigns it to the "GameStart".
+	 */
+	private void initializeNewGame(boolean isHuman, String name) {
+		System.out.println("NEW ----------- GAME");
+		//GameStart.siedlerVonCatan = new SiedlerVonCatan();
+		// Set singleplayer or multiplayer
+		GameStart.siedlerVonCatan.setSinglePlayer(isSingleplayer);
+		// Create a player and add it to the player-list.
+		// Is human
+		if (isHuman) {
+			player = new Human(team, name);
+		}
+		// Is Computer
+		else {
+			player = new Computer(team, name, false);
+		}
+		// Send request to server
+		sendReadyRequestToServer();
+	}
+
+	/**
+	 * Initializes/creates an entirely new game and assigns it to the "GameStart"
+	 * and sends requests to start the game. Only for single player.
+	 */
+	private void setUpSinglePlayerGame() {
+		// Creates additional 3 AIs
+		// Each AI will automatically establish a connection with the server, select a
+		// color and mark themselves as ready.
+		PlayerTeam playersColor = team;
+		ArrayList<Computer> computers = new ArrayList<>();
+		if (playersColor != PlayerTeam.TEAM_BLUE)
+			computers.add(new Computer(PlayerTeam.TEAM_BLUE, "ComputerBlue", true));
+		if (playersColor != PlayerTeam.TEAM_RED)
+			computers.add(new Computer(PlayerTeam.TEAM_RED, "ComputerRed", true));
+		if (playersColor != PlayerTeam.TEAM_WHITE)
+			computers.add(new Computer(PlayerTeam.TEAM_WHITE, "ComputerWhite", true));
+		if (playersColor != PlayerTeam.TEAM_ORANGE)
+			computers.add(new Computer(PlayerTeam.TEAM_ORANGE, "ComputerOrange", true));
+		// WAITING IS NEEDED
+		try {
+			Thread.sleep(1300);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// requests to join the lobby
+		for (Computer computer : computers) {
+			computer.getNetwork().getClientProtocol().sendPlayerRequest(computer);
+		}
+		try {
+			Thread.sleep(1300);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// Requests to start the game
+		for (Computer computer : computers) {
+			computer.getNetwork().getClientProtocol().requestGameStart();
+		}
+		sendStartGameRequest();
+	}
+
+	/**
+	 * Sends a player request to the server.
+	 */
+	private void sendReadyRequestToServer() {
+		GameStart.network.getClientProtocol().sendPlayerRequest(player);
+	}
+
+	/**
+	 * Sends a request to the server saying he is ready to start.
+	 */
+	private void sendStartGameRequest() {
+		GameStart.network.getClientProtocol().requestGameStart();
+	}
+}

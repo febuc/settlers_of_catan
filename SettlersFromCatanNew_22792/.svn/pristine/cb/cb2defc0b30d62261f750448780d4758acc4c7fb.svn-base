@@ -1,0 +1,167 @@
+package sound;
+
+import resources.ResourcePointer;
+import javafx.scene.media.AudioClip;
+
+import java.net.URL;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineListener;
+
+/**
+ * Handles everything to do with in game sounds
+ */
+public class SoundManager {
+    Clip backgroundMusic;
+    FloatControl gainControl;
+    private int lastBackGroundMusicTrack = -1;
+    private float musicVolumeValue;
+    private float soundEffectsVolumeValue=(float) 1.0;
+
+    /**
+     * Constructor. Starts the background music when created.
+     */
+    public SoundManager() {
+        playSoundBackGroundMusic();
+    }
+
+    /**
+     * Plays a background music track.
+     */
+    private void playSoundBackGroundMusic() {
+        int nextMusic = lastBackGroundMusicTrack;
+        while (nextMusic == lastBackGroundMusicTrack) {
+            nextMusic = (int) (Math.random() * 4) + 1;
+        }
+        lastBackGroundMusicTrack = nextMusic;
+        URL path = ResourcePointer.class.getResource("BackgroundMusic" + nextMusic + ".wav");
+        AudioInputStream audioInputStream;
+        try {
+            audioInputStream = AudioSystem.getAudioInputStream(path);
+            backgroundMusic = AudioSystem.getClip(null);
+            backgroundMusic.open(audioInputStream);
+            gainControl = (FloatControl) backgroundMusic.getControl(FloatControl.Type.MASTER_GAIN);
+            backgroundMusic.start();
+            backgroundMusic.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP) {
+                    event.getLine().close();
+                    System.out.println("Clip finished. Playing new clip....");
+                    playSoundBackGroundMusic();
+                    gainControl.setValue(musicVolumeValue);
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("Music error: " + "BackgroundMusic" + nextMusic + ".wav");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Triggers the sound effect: "OnButtonHover".
+     */
+    public void playSoundOnButtonHover() {
+        URL path = ResourcePointer.class.getResource("OnButtonHover.wav");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+
+    /**
+     * Triggers the sound effect: "OnWayPointHover".
+     */
+    public void OnWayPointHover() {
+        URL path = ResourcePointer.class.getResource("OnWayPointHover.wav");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+
+    /**
+     * Triggers the sound effect: "OnHexagonOver".
+     */
+    public void playSoundOnHexagonOver() {
+        URL path = ResourcePointer.class.getResource("OnHexagonOver.wav");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+
+    /**
+     * Triggers the sound effect: "AcceptSound".
+     */
+    public void playSoundAccept() {
+        URL path = ResourcePointer.class.getResource("AcceptSound.wav");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+
+    /**
+     * Triggers the sound effect: "ConfirmPurchaseSound".
+     */
+    public void playSoundConfirmPurchase() {
+        URL path = ResourcePointer.class.getResource("ConfirmPurchaseSound.wav");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+    
+    /**
+     * Triggers the sound effect: "Triumph".
+     */
+    public void playVictorySound() {
+    	URL path = ResourcePointer.class.getResource("Triumph.mp3");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+    
+    /**
+     * Triggers the sound effect: "DefeatSound".
+     */
+    public void playDefeatSound() {
+    	URL path = ResourcePointer.class.getResource("DefeatSound.mp3");
+        AudioClip sound = new AudioClip(path.toString());
+        sound.play(soundEffectsVolumeValue);
+    }
+
+    /**
+     * Changes the volume of the background music,
+     */
+    public void changeBackgroundMusicVolume(double volume) {
+        // substract 20 since the lowest sound level (80.0) is not audible
+        float range = gainControl.getMaximum() - gainControl.getMinimum() - 20;
+        float newValue = (float) (gainControl.getMinimum() + 20 + (volume - 1) * (range / 10));
+        if (volume == 1)
+            newValue = -80.0f;
+        musicVolumeValue = newValue;
+        gainControl.setValue(newValue);
+    }
+    /**
+     * changes the volume of the sound effects
+     * @param newValue Value from the sound effects slider (range 1 to 10)
+     */
+	public void changeSoundEffectsVolume(double newValue) {
+		if (newValue==1) soundEffectsVolumeValue=(float) 0.0;
+		else soundEffectsVolumeValue=(float) (newValue/10);
+	}
+
+    /**
+     * Plays a random dice rolling sound.
+     */
+    public void playRandomDiceRollingSound() {
+        int index = (int) (Math.random() * 3);
+        if (index == 0) {
+            URL path = ResourcePointer.class.getResource("DiceRolling1.wav");
+            AudioClip sound = new AudioClip(path.toString());
+            sound.play(soundEffectsVolumeValue);
+        } else if (index == 1) {
+            URL path = ResourcePointer.class.getResource("DiceRolling2.wav");
+            AudioClip sound = new AudioClip(path.toString());
+            sound.play(soundEffectsVolumeValue);
+        } else {
+            URL path = ResourcePointer.class.getResource("DiceRolling3.wav");
+            AudioClip sound = new AudioClip(path.toString());
+            sound.play(soundEffectsVolumeValue);
+        }
+    }
+
+}

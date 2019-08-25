@@ -1,0 +1,693 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Random;
+import gameplay.Dice;
+import networking.MessageObjects.*;
+
+/**
+ * This class shall be used to store information the server needs and or perform
+ * calculations or any other kind of operation. Should only have static methods
+ * and values.
+ *
+ * @author Felip
+ */
+public final class ServerMemoryLogic {
+
+	/**
+	 * The id of the player to move the thief next (Needed once
+	 * "numberOfDropHalfCardsPending" hits 0).
+	 */
+	public static PlayerForProtocol playerToMoveThiefNext;
+	/**
+	 * The ids of player who need to give back cards.
+	 */
+	public static HashSet<Integer> playersWhoNeedToGiveBackCards = new HashSet<>();
+	/**
+	 * Indicates how many turns we have to end until we complete the initial phase
+	 */
+	public static int initialPhaseRemainingTurns;
+
+	/**
+	 * Stores all the connected players in an array list who play the game.
+	 */
+	public static ArrayList<PlayerForProtocol> playerList = new ArrayList<>();
+	/**
+	 * Our dice
+	 */
+	public static Dice dice = new Dice();
+	/**
+	 * Map each ClientConnectionHandler to the corresponding PlayerForProtocol.
+	 */
+	public static HashMap<ClientConnectionHandler, PlayerForProtocol> clientToPlayer = new HashMap<ClientConnectionHandler, PlayerForProtocol>();
+	/**
+	 * Maps each player id to the last settlement built by the player in the initial
+	 * phase
+	 */
+	public static HashMap<Integer, Building> playerIdToSecondInitialPhaseSettlement = new HashMap<Integer, Building>();
+	/**
+	 * Defines how many players are ready and willing to start the game (if not
+	 * already started)
+	 */
+	public static int numberOfReadyPlayers = 0;
+	/**
+	 * A unique ID-Incrementer to assure unique id assignments for all clients.
+	 * Even after disconnecting
+	 */
+	private static int uniqueIdIncrementer = 0;
+
+	/**
+	 * Holds the player object of the player whose turn it is.
+	 */
+	private static PlayerForProtocol currentPlayer;
+
+	/**
+	 * List of all the resource fields and dessert
+	 */
+	private static String[] fieldTypes = { "Ackerland", "Huegelland", "Weideland", "Wald", "Gebirge", "Wueste" };
+
+	/**
+	 * List of all the port types
+	 */
+	private static String[] portTypes = { "Holz Hafen", "Lehm Hafen", "Wolle Hafen", "Erz Hafen", "Getreide Hafen",
+			"Hafen" };
+
+	/**
+	 * List of all the port locations
+	 */
+	private static String[] portLocations = { "fD", "jE", "nF", "qH", "oI", "kJ", "gL", "aA", "cB" };
+
+	/**
+	 * The number of grain fields is stored here
+	 */
+	private static int numberOfGrainFields;
+
+	/**
+	 * The number of wool fields is stored here
+	 */
+	private static int numberOfWoolFields;
+
+	/**
+	 * The number of wood fields is stored here
+	 */
+	private static int numberOfWoodFields;
+
+	/**
+	 * The number of loam fields is stored here
+	 */
+	private static int numberOfLoamFields;
+
+	/**
+	 * The number of stone fields is stored here
+	 */
+	private static int numberOfStoneFields;
+
+	/**
+	 * The number of desert fields is stored here
+	 */
+	private static int numberOfDesertFields;
+
+	/**
+	 * The number of grain ports is stored here
+	 */
+	private static int numberOfGrainPorts;
+
+	/**
+	 * The number of wool ports is stored here
+	 */
+	private static int numberOfWoolPorts;
+
+	/**
+	 * The number of wood ports is stored here
+	 */
+	private static int numberOfWoodPorts;
+
+	/**
+	 * The number of loam ports is stored here
+	 */
+	private static int numberOfLoamPorts;
+
+	/**
+	 * The number of stone ports is stored here
+	 */
+	private static int numberOfStonePorts;
+
+	/**
+	 * The number of normal ports is stored here
+	 */
+	private static int numberOfNormalPorts;
+
+	/**
+	 * Map of the game. Contains an array of all buildings, fields, ports and the
+	 * position of the thief
+	 */
+	public static Map serverMap;
+
+	/**
+	 * Costs of a development card (1 wool, 1 grain, 1 stone)
+	 */
+	public static final Resources costsOfADevelopmentCard = new Resources(0, 0, 1, 1, 1, 0);
+
+	/**
+	 * Increments the uniqueIdIncrementer by one.
+	 *
+	 * @return uniqueIdIncrementer+1
+	 */
+	public synchronized static Integer getIncrementedUniqueIdIncrementer() {
+		uniqueIdIncrementer++;
+		return uniqueIdIncrementer;
+	}
+
+	/**
+	 * A hashmap mapping tradeID to the corresponding resources. Resources[0] ==
+	 * Demand , Resources[1] == Supply
+	 */
+	public static HashMap<Integer, Resources[]> tradesResourceHashMap = new HashMap<>();
+	/**
+	 * A hashmap mapping tradeID to the initial trade requester.
+	 */
+	public static HashMap<Integer, Integer> tradesIDHashMap = new HashMap<>();
+	/**
+	 * The player with the longest road >= 5
+	 */
+	public static PlayerForProtocol currentPlayerWithLongestRoad = null;
+	/**
+	 * Stores the longest road from the players (Default is 4).
+	 */
+	public static int longestRoad = 4;
+	/**
+	 * The player with the largest army >= 3
+	 */
+	public static PlayerForProtocol currentPlayerWithLargestArmy = null;
+	/**
+	 * Stores the largest army from the players
+	 */
+	public static int largestArmy = 2;
+
+	/**
+	 * stores the numbers of still available development cards of each type(we begin
+	 * with 14 knight cards,2 road building,2 monopoly, 2 yearofplenty,5 victory)
+	 */
+	public static int[] availableDevelopmentCards = { 14, 2, 2, 2, 5 };
+	/**
+	 * random to choose the next development card
+	 */
+	public static Random developmentCardRandom = new Random();
+	/**
+	 * stores the numbers of still available resource cards of each type(we begin
+	 * with 19 each) order: wood, loam, wool, grain, stone
+	 */
+	public static int[] availableResourceCards = { 19, 19, 19, 19, 19 };
+	/**
+	 * hashmap from players id to all the buildings they can still build
+	 * (order:street, settlement, castle)
+	 */
+	public static HashMap<Integer, int[]> playerIdToAvailableBuildings = new HashMap<>();
+	
+	/**
+	 * hashmap from player id to development cards bought this round
+	 */
+	public static HashMap<Integer, DevelopmentCards> playerIdToDevCardsBoughtThisRound = new HashMap<>();
+	/**
+	 * Creates a random world (Random resources at random hexagon fields).
+	 *
+	 * @return An array of all the generated hexagon fields.
+	 */
+	public static Field[] generateRandomFields() {
+		try {
+			Field[] fields = new Field[19];
+			// This is needed for assigning the ort attribute in class field
+			String[] abc = getFieldLocationOrder();
+			// This is needed for assigning the zahl attribute in class field
+			int[] chips = { 5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11 };
+			// Initializing the number of each field
+			numberOfGrainFields = 4;
+			numberOfWoolFields = 4;
+			numberOfWoodFields = 4;
+			numberOfLoamFields = 3;
+			numberOfStoneFields = 3;
+			numberOfDesertFields = 1;
+			String fieldType = "";
+			// The fields are created here
+			int indexOfChips = 0;
+			for (int i = 0; i < fields.length; i++) {
+				fieldType = getRandomFieldType();
+				if (!fieldType.equals(fieldTypes[5])) {
+					fields[i] = new Field(abc[i], fieldType, chips[indexOfChips]);
+					indexOfChips++;
+				} else {
+					fields[i] = new Field(abc[i], fieldType, 7);
+				}
+			}
+
+			return fields;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * Gets a list of the field locations. This method simulates the variable set up
+	 * of the chip numbers for experienced players.
+	 *
+	 * @return List of field locations
+	 */
+	private static String[] getFieldLocationOrder() {
+		int n = (int) (Math.random() * 6);
+
+		switch (n) {
+		case 0:
+			// Start placing the chips at corner A
+			// Then go counter clockwise toward the center
+			String[] cornerA = { "A", "L", "K", "J", "I", "H", "G", "F", "E", "D", "C", "B", "M", "R", "Q", "P", "O",
+					"N", "S" };
+			return cornerA;
+		case 1:
+			// Start placing the chips at corner C
+			// Then go counter clockwise toward the center
+			String[] cornerC = { "C", "B", "A", "L", "K", "J", "I", "H", "G", "F", "E", "D", "N", "M", "R", "Q", "P",
+					"O", "S" };
+			return cornerC;
+		case 2:
+			// Start placing the chips at corner E
+			// Then go counter clockwise toward the center
+			String[] cornerE = { "E", "D", "C", "B", "A", "L", "K", "J", "I", "H", "G", "F", "O", "N", "M", "R", "Q",
+					"P", "S" };
+			return cornerE;
+		case 3:
+			// Start placing the chips at corner G
+			// Then go counter clockwise toward the center
+			String[] cornerG = { "G", "F", "E", "D", "C", "B", "A", "L", "K", "J", "I", "H", "P", "O", "N", "M", "R",
+					"Q", "S" };
+			return cornerG;
+		case 4:
+			// Start placing the chips at corner I
+			// Then go counter clockwise toward the center
+			String[] cornerI = { "I", "H", "G", "F", "E", "D", "C", "B", "A", "L", "K", "J", "Q", "P", "O", "N", "M",
+					"R", "S" };
+			return cornerI;
+		case 5:
+			// Start placing the chips at corner K
+			// Then go counter clockwise toward the center
+			String[] cornerK = { "K", "J", "I", "H", "G", "F", "E", "D", "C", "B", "A", "L", "R", "Q", "P", "O", "N",
+					"M", "S" };
+			return cornerK;
+		default:
+			// to avoid problems with switch case
+			String[] chips = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R",
+					"S" };
+			return chips;
+		}
+	}
+
+	/**
+	 * Gets a random field type to be assigned to a field.
+	 *
+	 * @return fieldtype
+	 */
+	private static String getRandomFieldType() {
+		int total = numberOfGrainFields + numberOfLoamFields + numberOfWoolFields + numberOfWoodFields
+				+ numberOfStoneFields + numberOfDesertFields;
+		int n = (int) (Math.random() * total) + 1;
+		String fieldtype = "";
+		// Check if grain field
+		if (n <= numberOfGrainFields) {
+			fieldtype += fieldTypes[0];
+			numberOfGrainFields--;
+		} // Check if loam field
+		else if (n <= numberOfGrainFields + numberOfLoamFields) {
+			fieldtype += fieldTypes[1];
+			numberOfLoamFields--;
+		} // Check if wool field
+		else if (n <= numberOfGrainFields + numberOfLoamFields + numberOfWoolFields) {
+			fieldtype += fieldTypes[2];
+			numberOfWoolFields--;
+		} // Check if wood field
+		else if (n <= numberOfGrainFields + numberOfLoamFields + numberOfWoolFields + numberOfWoodFields) {
+			fieldtype += fieldTypes[3];
+			numberOfWoodFields--;
+		} // Check if stone field
+		else if (n <= numberOfGrainFields + numberOfLoamFields + numberOfWoolFields + numberOfWoodFields
+				+ numberOfStoneFields) {
+			fieldtype += fieldTypes[4];
+			numberOfStoneFields--;
+		} // Check if desert field
+		else if (n <= total) {
+			fieldtype += fieldTypes[5];
+			numberOfDesertFields--;
+		}
+
+		return fieldtype;
+	}
+
+	/**
+	 * Creates random ports.
+	 *
+	 * @return An array of all the generated port fields.
+	 */
+	public static Port[] generateRandomPorts() {
+		Port[] ports = new Port[9];
+		numberOfGrainPorts = numberOfLoamPorts = numberOfStonePorts = numberOfWoodPorts = numberOfWoolPorts = 1;
+		numberOfNormalPorts = 4;
+		for (int i = 0; i < ports.length; i++) {
+			ports[i] = new Port(portLocations[i], getRandomPortType());
+		}
+		return ports;
+	}
+
+	/**
+	 * Gets a random port type to be assigned to a port.
+	 *
+	 * @return porttype
+	 */
+	private static String getRandomPortType() {
+		int total = numberOfWoodPorts + numberOfLoamPorts + numberOfWoolPorts + numberOfStonePorts + numberOfGrainPorts
+				+ numberOfNormalPorts;
+		int n = (int) (Math.random() * total) + 1;
+		String porttype = "";
+		if (n <= numberOfWoodPorts) {
+			porttype += portTypes[0];
+			numberOfWoodPorts--;
+		} // Check if loam port
+		else if (n <= numberOfWoodPorts + numberOfLoamPorts) {
+			porttype += portTypes[1];
+			numberOfLoamPorts--;
+		} // Check if wool port
+		else if (n <= numberOfWoodPorts + numberOfLoamPorts + numberOfWoolPorts) {
+			porttype += portTypes[2];
+			numberOfWoolPorts--;
+		} // Check if wood port
+		else if (n <= numberOfWoodPorts + numberOfLoamPorts + numberOfWoolPorts + numberOfStonePorts) {
+			porttype += portTypes[3];
+			numberOfStonePorts--;
+		} // Check if stone port
+		else if (n <= numberOfWoodPorts + numberOfLoamPorts + numberOfWoolPorts + numberOfStonePorts
+				+ numberOfGrainPorts) {
+			porttype += portTypes[4];
+			numberOfGrainPorts--;
+		} // Check if plain port
+		else if (n <= total) {
+			porttype += portTypes[5];
+			numberOfNormalPorts--;
+		}
+
+		return porttype;
+	}
+
+	/**
+	 * Finds a PlayerForProtocol with a given id in the list if exits (else null).
+	 *
+	 * @param id  The id of the player we are searching for.
+	 */
+	public static PlayerForProtocol findPlayerByID(Integer id) {
+		for (PlayerForProtocol playerForProtocol : ServerMemoryLogic.playerList) {
+			if (playerForProtocol.getId().intValue() == id.intValue())
+				return playerForProtocol;
+		}
+		return null;
+	}
+
+	public static PlayerForProtocol getPlayerRespondingToHandler(ClientConnectionHandler handler) {
+		return clientToPlayer.get(handler);
+	}
+
+	/**
+	 * Calculates which player gets which earnings, when diceThrow is rolled and
+	 * returns them.
+	 *
+	 * @param diceThrow
+	 * @return only the not empty earnings for each player
+	 */
+	public static ArrayList<Earnings> updatePlayerResoucesAfterDiceThrow(int diceThrow) {
+		ArrayList<Earnings> result = new ArrayList<>();
+		for (int i = 0; i < serverMap.getFields().length; i++) {
+			if (serverMap.getFields()[i].getNumber() == diceThrow) {
+				// check if there is a thief
+				if (serverMap.getFields()[i].getLocation().equals(serverMap.getThief())) continue;
+				
+				// check now for every building if it is on/next to the field
+				for (int j = 0; j < serverMap.getBuildings().length; j++) {
+					if (!serverMap.getBuildings()[j].getType().equals("Strasse")) {
+						String buildingposition = serverMap.getBuildings()[j].getLocation();
+						if (buildingposition.contains(serverMap.getFields()[i].getLocation())) {
+							boolean added = false;
+							int playerID = serverMap.getBuildings()[j].getOwner();
+							String type = serverMap.getFields()[i].getType();
+							int amount = serverMap.getBuildings()[j].getType().equals("Stadt") ? 2 : 1;
+							
+							System.out.println("\n"+playerID + serverMap.getBuildings()[j].getType());
+							
+							Earnings earningsToUpdate = null;
+							// check if this player already gets earnings this turn
+							for (Earnings earnings : result) {
+								if (earnings.getPlayer() == playerID) {
+									added = true;
+									earningsToUpdate = earnings;
+								}
+							}
+							// if not we create a new object earnings for this player
+							if (!added) {
+								Resources resources = new Resources(0, 0, 0, 0, 0, 0);
+								Earnings earnings = new Earnings(playerID, resources);
+								result.add(earnings);
+								earningsToUpdate = earnings;
+							}
+							switch (type) {
+							case "Ackerland":
+								earningsToUpdate.getResources()
+										.setGrain(earningsToUpdate.getResources().getGrain() + amount);
+								break;
+							case "Huegelland":
+								earningsToUpdate.getResources()
+										.setLoam(earningsToUpdate.getResources().getLoam() + amount);
+								break;
+							case "Weideland":
+								earningsToUpdate.getResources()
+										.setWool(earningsToUpdate.getResources().getWool() + amount);
+								break;
+							case "Wald":
+								earningsToUpdate.getResources()
+										.setWood(earningsToUpdate.getResources().getWood() + amount);
+								break;
+							case "Gebirge":
+								earningsToUpdate.getResources()
+										.setStone(earningsToUpdate.getResources().getStone() + amount);
+								break;
+							default:
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Reduces the number of resource cards which are still available
+	 * @param resourcesToSubstract type of resources which will be subtracted
+	 */
+	public static void reduceAvailableResourceCardsNumber(Resources resourcesToSubstract) {
+		availableResourceCards[0] -= resourcesToSubstract.getWood();
+		availableResourceCards[1] -= resourcesToSubstract.getLoam();
+		availableResourceCards[2] -= resourcesToSubstract.getWool();
+		availableResourceCards[3] -= resourcesToSubstract.getGrain();
+		availableResourceCards[4] -= resourcesToSubstract.getStone();
+		System.out.println("resources cards available: " + availableResourceCards[0] + ", " + availableResourceCards[1]
+				+ ", " + availableResourceCards[2] + ", " + availableResourceCards[3] + ", "
+				+ availableResourceCards[4]);
+	}
+	
+	/**
+	 * Increases the number of resource cards which are still available
+	 * @param resourcesToAdd  type of resources which will be added
+	 */
+	public static void increaseAvailableResourceCardsNumber(Resources resourcesToAdd) {
+		availableResourceCards[0] += resourcesToAdd.getWood();
+		availableResourceCards[1] += resourcesToAdd.getLoam();
+		availableResourceCards[2] += resourcesToAdd.getWool();
+		availableResourceCards[3] += resourcesToAdd.getGrain();
+		availableResourceCards[4] += resourcesToAdd.getStone();
+		System.out.println("resources cards available: " + availableResourceCards[0] + ", " + availableResourceCards[1]
+				+ ", " + availableResourceCards[2] + ", " + availableResourceCards[3] + ", "
+				+ availableResourceCards[4]);
+	}
+
+	/**
+	 * Adds or updates a building in the servermap.
+	 *
+	 * @param building
+	 */
+	public static void addBuilding(Building building) {
+		Building[] buildings = serverMap.getBuildings();
+		// Check if already existing
+		for (Building buildingInArray : serverMap.getBuildings()) {
+			if (buildingInArray.equals(building)) {
+				buildingInArray.setType(building.getType());
+				return;
+			}
+		}
+		// If not in list, then add it
+		Building[] buildingsNew = new Building[buildings.length + 1];
+		for (int i = 0; i < buildings.length; i++) {
+			buildingsNew[i] = buildings[i];
+		}
+		buildingsNew[buildings.length] = building;
+		serverMap.setBuildings(buildingsNew);
+	}
+
+	/**
+	 * removes a building from the serverMap - used for road Building card if the
+	 * second street check is false
+	 * 
+	 * @param building
+	 */
+	public static void removeBuilding(Building building) {
+		Building[] buildings = serverMap.getBuildings();
+		// Replace the building with a null value
+		for (Building buildingInArray : buildings) {
+			if (buildingInArray.equals(building)) {
+				buildingInArray = null;
+			}
+		}
+		// signalizes whether we've already passed the building to remove while
+		// iterating thorough buildings
+		boolean buildingFound = false;
+		Building[] buildingsNew = new Building[buildings.length - 1];
+		for (int i = 0; i < buildings.length; i++) {
+			if (buildings[i].equals(building))
+				buildingFound = true;
+			else if (buildingFound)
+				buildingsNew[i] = buildings[i + 1];
+			else
+				buildingsNew[i] = buildings[i];
+		}
+		serverMap.setBuildings(buildingsNew);
+	}
+
+	/**
+	 * Adds the resources of the earnings to the players' resources
+	 *
+	 * @param earnings
+	 */
+	public static void addEarnings(Earnings earnings) {
+		int playerID = earnings.getPlayer();
+		Resources resourcesToAdd = earnings.getResources();
+
+		PlayerForProtocol player = null;
+		for (PlayerForProtocol p : playerList) {
+			if (p.getId() == playerID)
+				player = p;
+		}
+		player.getResources().addToResources(resourcesToAdd);
+	}
+
+	/**
+	 * Gets requested resources from trade id
+	 * @param id trade id
+	 * @return
+	 */
+	public static Resources getRequestedResourcesFromTradeId(Integer id) {
+		return tradesResourceHashMap.get(id)[0];
+	}
+
+	/**
+	 * Returns a random development card.
+	 * @return development card
+	 */
+	public static DevelopmentCards getRandomDevelopmentCard() {
+		ArrayList<Integer> indexesOfAvailableCardTypes = new ArrayList<Integer>();
+		for (int i = 0; i < 5; ++i) {
+			if (availableDevelopmentCards[i] != 0)
+				indexesOfAvailableCardTypes.add(i);
+		}
+		if (indexesOfAvailableCardTypes.isEmpty())
+			return null;
+		int internArrayListCardIndex = developmentCardRandom.nextInt(indexesOfAvailableCardTypes.size());
+		int cardIndex = indexesOfAvailableCardTypes.get(internArrayListCardIndex);
+		if (availableDevelopmentCards[cardIndex] != 0)
+			availableDevelopmentCards[cardIndex]--;
+		switch (cardIndex) {
+		case 0:
+			return new DevelopmentCards( 1, null, null, null, null, null);
+		case 1:
+			return new DevelopmentCards(null, 1, null, null, null, null);
+		case 2:
+			return new DevelopmentCards(null, null, 1, null, null, null);
+		case 3:
+			return new DevelopmentCards(null, null, null, 1, null, null);
+		case 4:
+			return new DevelopmentCards(null, null, null, null, 1, null);
+		default:
+			return null;
+		}
+	}
+
+	/**
+	 * returns current player
+	 * @return current player
+	 */
+	public static PlayerForProtocol getCurrentPlayer() {
+		return currentPlayer;
+	}
+
+	/**
+	 * SEts current player
+	 * @param currentPlayer
+	 */
+	public static void setCurrentPlayer(PlayerForProtocol currentPlayer) {
+		ServerMemoryLogic.currentPlayer = currentPlayer;
+	}
+
+	/**
+	 * returns player with longest route
+	 * @return the player (if existing) with the longest rode >= 5
+	 */
+	public synchronized static PlayerForProtocol getPlayerWithLongestRoute() {
+		Building[] buildings = serverMap.getBuildings();
+		longestRoad = 4;
+		PlayerForProtocol playerWithLongestRoute = null;
+		for (Building building : buildings) {
+			if (!building.getType().equals("Strasse"))
+				continue;
+			int temp = getPlayerWithLongestRodeRekursive(building, new HashSet<>());
+			PlayerForProtocol newPlayer = findPlayerByID(building.getOwner());
+			if (temp > longestRoad) {
+				longestRoad = temp;
+				playerWithLongestRoute = newPlayer;
+			}
+		}
+		System.out.println("<<<<Longest RODE:" + (longestRoad == 4 ? "None" : longestRoad) + ">>>>>>");
+		return playerWithLongestRoute;
+	}
+
+	/**
+	 * Helper function for getPlayerWithLongestRode
+	 *
+	 * @return
+	 */
+	private static int getPlayerWithLongestRodeRekursive(Building building,
+			HashSet<Building> alreadyVisitedBuildingsSuper) {
+		int max = 1;
+		HashSet<Building> alreadyVisitedBuildings = (HashSet<Building>) alreadyVisitedBuildingsSuper.clone();
+		alreadyVisitedBuildings.add(building);
+		HashSet<Building> buildings = serverMap.streetGetBuildingNearby(building.getLocation(),
+				ServerRequestCheck.getCrossings());
+		HashSet<Building> alreadyVisitedBuildingsClone = (HashSet<Building>) alreadyVisitedBuildings.clone();
+		alreadyVisitedBuildingsClone.addAll(buildings);		
+		for (Building building1 : buildings) {
+			// Check if backtracking
+			if (alreadyVisitedBuildings.contains(building1))
+				continue;
+			else if (building1.getType().equals("Strasse") && building.getOwner() == building1.getOwner()) {
+				max = Math.max(getPlayerWithLongestRodeRekursive(building1, alreadyVisitedBuildingsClone) + 1, max);
+			}
+			else if (!building1.getType().equals("Strasse") && building.getOwner() != building1.getOwner()) {
+				break;
+			}
+		}
+		return max;
+	}
+}

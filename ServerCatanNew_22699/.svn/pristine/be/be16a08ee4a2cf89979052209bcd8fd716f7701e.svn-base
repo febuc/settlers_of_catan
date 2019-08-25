@@ -1,0 +1,209 @@
+import java.io.IOException;
+
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+
+import javafx.application.Platform;
+import networking.MessageObjects.PlayerForProtocol;
+import networking.MessageObjects.PlayerStatusUpdate;
+
+/**
+ * Central class in the server representation. The server object is implemented as a thread.
+ *
+ * @author Marcelina
+ */
+public class Server extends Thread {
+    private final int PORT = 8080;
+    private ServerSocket serverSocket;
+    /**
+     * connectionHandlers contains all the list of created connection handlers - each representing a connected client for the server
+     */
+    private ArrayList<ClientConnectionHandler> connectionHandlers = new ArrayList<>();
+    private ServerWindow serverWindow;
+    private boolean serverActive;
+    private static final String version = "...";
+    private static final String protocolInfo = "1.0";
+    private boolean informedConnectionLost = false;
+
+    /***
+     * Constructor
+     */
+    public Server() {
+        this.serverActive = true;
+        try {
+            serverSocket = new ServerSocket(PORT);
+        } catch (IOException e) {
+            // e.printStackTrace();
+            // If we have an error, then deactivate the server
+            serverActive = false;
+            Platform.runLater(() -> serverWindow.serverAlreadyCreated());
+        }
+    }
+
+    /**
+     * defines the behavior of the server - it will wait for clients to connect, as soon as one of them does
+     * a connectionHandler is created for them and the communication between this client and server is handled
+     * in that connectionHandler
+     */
+    @Override
+    public void run() {
+        while (serverActive) {
+
+            try {
+                Socket socket = serverSocket.accept();
+                addClient(socket);
+            }
+            // This will throw an error if we close the connection manually. No need to
+            // trace the error.
+            // Just ignore, since the application terminates right away in that case.
+            catch (IOException e) {
+                // e.printStackTrace();
+            }
+        }
+        try {
+            serverSocket.close();
+        } catch (Exception e) {
+            // e.printStackTrace();
+        }
+    }
+
+    /**
+     * Adds / Creates a client.
+     */
+    private synchronized void addClient(Socket socket) {
+        ClientConnectionHandler clientConnectionHandler = new ClientConnectionHandler(this, socket);
+        connectionHandlers.add(clientConnectionHandler);
+        Platform.runLater(() -> serverWindow.printServerStatusUpdate("New client connected"));
+        clientConnectionHandler.start();
+        System.out.println("Client connection established (message from server)");
+    }
+
+    /**
+     * Assigns a window to the server.
+     *
+     * @param serverWindow The window for the server.
+     */
+    public void setWindow(ServerWindow serverWindow) {
+        this.serverWindow = serverWindow;
+    }
+
+    /**
+     * returns the server window object belonging to this server
+     *
+     * @return
+     */
+    public ServerWindow getWindow() {
+        return this.serverWindow;
+    }
+
+    /**
+     * used to remove a given connection handler from the connectionHandler arraylist. Game is disrupted.
+     *
+     * @param clientConnectionHandler clientConnectionHandler of the client who disconnected
+     */
+    public void removeConnectionHandler(ClientConnectionHandler clientConnectionHandler) {
+        if (connectionHandlers.contains(clientConnectionHandler)) {
+            connectionHandlers.remove(clientConnectionHandler);
+            // Inform clients that a client disconnected => terminate game
+            informConnectionLost();
+        }
+        //Platform.runLater(() -> serverWindow.printServerStatusUpdate("Client disconnected"));
+    }
+
+    /**
+     * Informs the clients that a client has disconnected => terminate game
+     */
+    public final void informConnectionLost() {
+        if (informedConnectionLost)
+            return;
+        informedConnectionLost = true;
+        Platform.runLater(() -> serverWindow.printServerStatusUpdate("Client disconnected"));
+        // Inform all other clients that a client disconnected (potentially abort game)
+        PlayerForProtocol playerForProtocol = new PlayerForProtocol(-1, null, null, "Verbindung verloren", null,
+                null, null, null);
+        PlayerStatusUpdate playerStatusUpdate = new PlayerStatusUpdate(playerForProtocol);
+        broadcast(playerStatusUpdate);
+        clearMemory();
+    }
+
+    /**
+     * Use with caution! Resets the entire memory (Useful if a game ends or
+     * terminates).
+     */
+    public final void clearMemory() {
+        Platform.runLater(() -> serverWindow.printServerStatusUpdate("Memory cleared"));
+        ServerMemoryLogic.numberOfReadyPlayers = 0;
+        ServerMemoryLogic.playerList.clear();
+        connectionHandlers.clear();
+        informedConnectionLost = false;
+        Platform.runLater(() -> ServerLauncher.initializeServer(serverWindow.getStage()));
+        deactivateServer();
+    }
+
+    /**
+     * Deactivates the server
+     */
+    public void deactivateServer() {
+        Platform.runLater(() -> serverWindow.printServerStatusUpdate("--------------\nServer deactivated"));
+        try {
+            serverActive = false;
+            serverSocket.close();
+            this.join();
+        } catch (Exception e) {
+            // e.printStackTrace();
+            this.stop();
+        }
+    }
+
+    /**
+     * Broadcast and object to all clients via connection handler.
+     *
+     * @param object The object to send to all clients.
+     */
+    public synchronized void broadcast(Object object) {
+        ArrayList<ClientConnectionHandler> connectionHandlersCopy = (ArrayList<ClientConnectionHandler>) connectionHandlers.clone();
+        for (ClientConnectionHandler h : connectionHandlersCopy) {
+            h.sendObject(object);
+        }
+    }
+
+    /**
+     * Broadcasts and object to all clients except playerID  via connection handler.
+     *
+     * @param playerID The player, who should not receive this object.
+     * @param object   The object to send to all clients.
+     */
+    public synchronized void broadcastToAllOthers(int playerID, Object object) {
+        ArrayList<ClientConnectionHandler> connectionHandlersCopy = (ArrayList<ClientConnectionHandler>) connectionHandlers.clone();
+        for (ClientConnectionHandler h : connectionHandlersCopy) {
+            if (h.getPlayerId() != playerID)
+                h.sendObject(object);
+        }
+    }
+
+    /**
+     * Sends an object to one client.
+     *
+     * @param playerID The ID of the client you want to send the object to.
+     * @param object   The object to send one client.
+     */
+    public void sendObjectTo(int playerID, Object object) {
+        ArrayList<ClientConnectionHandler> connectionHandlersCopy = (ArrayList<ClientConnectionHandler>) connectionHandlers.clone();
+        for (ClientConnectionHandler h : connectionHandlersCopy) {
+            if (h.getPlayerId() == playerID) {
+                h.sendObject(object);
+                return;
+            }
+        }
+    }
+
+    //getters
+    public String getVersion() {
+        return version;
+    }
+
+    public String getProtocolInfo() {
+        return protocolInfo;
+    }
+}

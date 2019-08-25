@@ -1,0 +1,117 @@
+import javafx.animation.FadeTransition;
+import javafx.animation.Timeline;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+import resources.ResourcePointer;
+
+/**
+ * This class represents the window for display of the server program.
+ */
+
+public class ServerWindow {
+    Screen screen = Screen.getPrimary();
+    Rectangle2D bounds = screen.getVisualBounds();
+    private Server server;
+    private Stage stage;
+    private Scene scene;
+    private VBox vBox;
+    private Pane root;
+    private double stageHeight = 200, stageWidth = 250;
+    private final Font basicFont = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(), stageHeight/13);
+
+
+
+    /**
+     * Creates a server window
+     *
+     * @param server      Our server
+     * @param serverStage The primary game stage
+     */
+    public ServerWindow(Server server, Stage serverStage) {
+        this.server = server;
+        this.stage = serverStage;
+        //Deactivate resizing
+        stage.setResizable(false);
+
+        root = new Pane();
+
+        vBox = new VBox();
+        root.getChildren().add(vBox);
+        scene = new Scene(root,stageWidth,stageHeight);
+        root.setBackground(new Background(new BackgroundFill(Color.BLACK, null, null)));
+        stage.setTitle("Catan: Server");
+
+        stage.setScene(scene);
+        stage.getIcons().add(new Image(ServerWindow.class.getResourceAsStream("ServerIcon.png")));
+        stage.show();
+
+        //Add graphical features
+
+        //Set up a layout
+        //basicFont = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(), stageHeight / 20);
+        //Assign font to text
+        //Create a "server is running" animation
+        //Creates a fade transition
+        Rectangle serverRunningIndicator = new Rectangle(stageWidth-stageWidth / 30, stageHeight-stageHeight / 30, stageHeight / 30, stageHeight / 30);
+        serverRunningIndicator.setFill(Color.LIMEGREEN);
+        FadeTransition ft = new FadeTransition(Duration.millis(1000), serverRunningIndicator);
+        ft.setFromValue(1.0);
+        ft.setToValue(0.1);
+        ft.setCycleCount(Timeline.INDEFINITE);
+        ft.setAutoReverse(true);
+        ft.play();
+        //Render animation
+        root.getChildren().add(serverRunningIndicator);
+
+        //Show start message
+        printServerStatusUpdate("Server launched!");
+
+        //End server when window closes
+        stage.setOnCloseRequest(e -> {
+            server.informConnectionLost(0);
+            server.deactivateServer();
+            System.exit(0);
+        });
+
+
+    }
+
+    /**
+     * Allows printing Status Updates (server launched, new client connected) of the server in the server window
+     *
+     * @param message message to be printed in the server window
+     */
+    public void printServerStatusUpdate(String message) {
+        Label label = new Label(message);
+        label.setFont(basicFont);
+        label.setTextFill(Color.LIMEGREEN);
+        vBox.getChildren().add(label);
+    }
+
+    /**
+     * Tells the user that a server has already been created
+     */
+    public void serverAlreadyCreated() {
+        root.getChildren().clear();
+        Label errorMessage = new Label(" Server already created\n or connection missing!");
+        errorMessage.setFont(basicFont);
+        errorMessage.setTextFill(Color.INDIANRED);
+        root.getChildren().add(errorMessage);
+    }
+
+    public Stage getStage() {
+        return stage;
+    }
+}

@@ -1,0 +1,288 @@
+package networking.MessageObjects;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+
+import tools.BuildingType;
+import tools.PortTypes;
+
+import com.google.gson.annotations.SerializedName;
+
+/**
+ * This class represents the Map object type used in the client/server
+ * communication.
+ * 
+ * @author Marcelina
+ */
+
+public class Map {
+	@SerializedName("Felder")
+	private Field[] fields;
+	@SerializedName("Gebaeude")
+	private Building[] buildings;
+	@SerializedName("Haefen")
+	private Port[] ports;
+	@SerializedName("Raeuber")
+	private Coordinates thief;
+
+	/**
+	 * constructor
+	 * 
+	 * @param fields
+	 *            array consisting of all fields on the map
+	 * @param buildings
+	 *            array consisting of all buildings currently on the map
+	 * @param ports
+	 *            array consisting of all ports currently on the map
+	 * @param thief
+	 *            defines the position of the thief on the map
+	 */
+	public Map(Field[] fields, Building[] buildings, Port[] ports, String thief) {
+		this.setFields(fields);
+		this.setBuildings(buildings);
+		this.setPorts(ports);
+		this.setThief(thief);
+	}
+
+	/**
+	 * checks if and by what building a given spot is occupied
+	 * 
+	 * @param checkedLocation
+	 *            location to be checked
+	 * @return
+	 */
+	public BuildingType isOccupiedBy(String checkedLocation) {
+		outerloop: for (Building building : buildings) {
+			if (checkedLocation.length() != building.getLocation().length())
+				continue;
+			for (char character : checkedLocation.toCharArray()) {
+				if (building.getLocation().indexOf(character) < 0)
+					continue outerloop;
+			}
+			return tools.WorldTranslation.getServerBuildingTypeToClientBuildingType(building.getType());
+		}
+		return BuildingType.NONE;
+	}
+
+	/**
+	 * Check if there is a street (of the owner) next to the checkedLocation 
+	 * @param owner
+	 * @param checkedLocation
+	 */
+	public boolean villageCheckForStreetNearby(Integer owner, String checkedLocation){
+		for (Building building : buildings) {
+			String intersectingLetters = getIntersectingLetters(checkedLocation, building.getLocation());
+			if (intersectingLetters.length() == 2 && owner == building.getOwner())
+				return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * method used to check if there is a building nearby = if the street can be
+	 * built
+	 * 
+	 * @param owner
+	 * @param checkedLocation
+	 * @param crossings
+	 * @return
+	 */
+	public boolean streetCheckForOwnBuildingNearby(Integer owner, String checkedLocation, ArrayList<String> crossings) {
+		outerloop:
+		for (Building building : buildings) {
+			BuildingType buildingType = tools.WorldTranslation
+					.getServerBuildingTypeToClientBuildingType(building.getType());
+			String intersectingLetters = getIntersectingLetters(checkedLocation, building.getLocation());
+			if (intersectingLetters.length() < 1)
+				continue;
+			else if (intersectingLetters.length() == 2 && owner == building.getOwner())
+				return true;
+			else if (intersectingLetters.length() == 1 && owner == building.getOwner()
+					&& buildingType.equals(BuildingType.STREET)) {
+				String differentLetter = intersectingLetters.contains(checkedLocation.substring(0, 1))
+						? (checkedLocation.substring(1, 2)) : (checkedLocation.substring(0, 1));
+				String checkedCrossing = building.getLocation() + differentLetter;
+				//check if the two streets are not separated by an other player's settlement/castle
+				for (Building possiblyIntersectingBuilding: buildings){
+					if(possiblyIntersectingBuilding.getType()=="Strasse"||possiblyIntersectingBuilding.getOwner()==owner) continue;
+					int correctLetters = 0;
+					for (char character : possiblyIntersectingBuilding.getLocation().toCharArray()) {
+						if (checkedCrossing.indexOf(character) >= 0)
+							correctLetters++;
+					}
+					if (correctLetters == 3) continue outerloop;
+				}
+				for (String crossing : crossings) {
+					int correctLetters = 0;
+					for (char character : crossing.toCharArray()) {
+						if (checkedCrossing.indexOf(character) >= 0)
+							correctLetters++;
+					}
+					if (correctLetters == 3)
+						return true;
+				}
+			}
+		}
+		return false;
+	}
+	/**
+	 * returns an array of buildings near a location
+	 *
+	 * @param checkedLocation
+	 * @param crossings
+	 * @return
+	 */
+	public HashSet<Building> streetGetBuildingNearby(String checkedLocation, ArrayList<String> crossings) {
+		HashSet<Building>  buildingsToReturn = new HashSet<>();
+		for (Building building : buildings) {
+			BuildingType buildingType = tools.WorldTranslation
+					.getServerBuildingTypeToClientBuildingType(building.getType());
+			String intersectingLetters = getIntersectingLetters(checkedLocation, building.getLocation());
+			if (intersectingLetters.length() < 1)
+				continue;
+			else if (intersectingLetters.length() == 2)
+				buildingsToReturn.add(building);
+			else if (intersectingLetters.length() == 1 && buildingType.equals(BuildingType.STREET)) {
+				String differentLetter = intersectingLetters.contains(checkedLocation.substring(0, 1))
+						? (checkedLocation.substring(1, 2)) : (checkedLocation.substring(0, 1));
+				String checkedCrossing = building.getLocation() + differentLetter;
+				for (String crossing : crossings) {
+					int correctLetters = 0;
+					for (char character : crossing.toCharArray()) {
+						if (checkedCrossing.indexOf(character) >= 0)
+							correctLetters++;
+					}
+					if (correctLetters == 3)
+						buildingsToReturn.add(building);
+				}
+			}
+		}
+		return buildingsToReturn;
+	}
+
+	/**
+	 * Checks if a requested street is next to a given building (used for the
+	 * second street built in the initial phase
+	 * 
+	 * @param buildingLocation
+	 *            building to be checked
+	 * @param streetLocation
+	 *            requested street
+	 * @return true if build possible
+	 */
+	public boolean streetCheckIfGivenBuildingNearby(String buildingLocation, String streetLocation) {
+		return (getIntersectingLetters(buildingLocation, streetLocation).length() == 2);
+	}
+
+	/**
+	 * method used to check if there is a street next to the chosen
+	 * settlement/city location
+	 * 
+	 * @param checkedLocation
+	 *            requested location for the building
+	 * @return true if building accepted
+	 */
+	public boolean buildingCheckForStreetNearby(String checkedLocation) {
+		for (Building building : buildings) {
+			BuildingType buildingType = tools.WorldTranslation
+					.getServerBuildingTypeToClientBuildingType(building.getType());
+			if (!buildingType.equals(BuildingType.STREET))
+				continue;
+			String intersectingLetters = getIntersectingLetters(checkedLocation, building.getLocation());
+			if (intersectingLetters.length() == 2)
+				return true;
+		}
+		return false;
+	}
+
+	/**
+	 * used to check if there is a building on a neighbour crossing
+	 * 
+	 * @param location
+	 */
+	public boolean checkIfNoBuildingNearby(String location) {
+		for (Building building : buildings) {
+			if (building.getType().equals("Strasse"))
+				continue;
+			String intersectingLetters = getIntersectingLetters(location, building.getLocation());
+			if (intersectingLetters.length() > 1)
+				return false;
+		}
+		return true;
+	}
+
+	/**
+	 * used by maritime trading to check if the player owns a port nearby
+	 * 
+	 * @param player
+	 * @param portType
+	 * @return true if this trading condition is fulfilled
+	 */
+	public boolean checkIfOwnPortNearby(PlayerForProtocol player, PortTypes portType) {
+		for (Building building : buildings) {
+			if (building.getOwner() != player.getId() || building.getType().equals("Strasse")
+					|| building.getType().equals(BuildingType.NONE))
+				continue;
+			for (Port port : ports) {
+				if (!tools.WorldTranslation.getServerPortTypeToClientPortType(port.getType()).equals(portType))
+					continue;
+				String intersectingLetters = getIntersectingLetters(building.getLocation(), port.getLocation());
+				if (intersectingLetters.length() == 2)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * checks intersection of two strings
+	 * 
+	 * @param str1
+	 *            first string
+	 * @param str2
+	 *            second string
+	 * @return intersection of the two
+	 */
+	public String getIntersectingLetters(String str1, String str2) {
+		String intersectingLetters = "";
+		for (char character : str1.toCharArray()) {
+			if (str2.indexOf(character) >= 0)
+				intersectingLetters += character;
+		}
+		return intersectingLetters;
+	}
+
+	// Getters and Setters
+	public Field[] getFields() {
+		return fields;
+	}
+
+	public void setFields(Field[] fields) {
+		this.fields = fields;
+	}
+
+	public Building[] getBuildings() {
+		return buildings;
+	}
+
+	public void setBuildings(Building[] buildings) {
+		this.buildings = buildings;
+	}
+
+	public Port[] getPorts() {
+		return ports;
+	}
+
+	public void setPorts(Port[] ports) {
+		this.ports = ports;
+	}
+
+	public String getThief() {
+		return thief.translateToLetter();
+	}
+
+	public void setThief(String thief) {
+		this.thief = new Coordinates(thief);
+	}
+
+}

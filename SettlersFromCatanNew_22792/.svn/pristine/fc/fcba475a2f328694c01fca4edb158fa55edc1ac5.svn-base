@@ -1,0 +1,365 @@
+package menu;
+
+import application.GameStart;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.*;
+import resources.ResourcePointer;
+import tools.Vector2D;
+import view.GameView;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.control.Button;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+
+/**
+ * Simulates a main menu which will be the players first interaction when
+ * starting the application.
+ *
+ * @author Felip
+ */
+public class MainMenu {
+
+	/**
+	 * The main menu root
+	 */
+	private Parent root;
+
+	/**
+	 * The (only?) gameView from the game
+	 */
+	private GameView gameView;
+
+	private Button singlePlayer = new Button("Single Player");
+	private Button multiplayer = new Button("Multi Player");
+	private Button rules = new Button("How to play");
+	private Button settings = new Button("Settings");
+	private Button credits = new Button("Credits");
+	private Button quit = new Button("Quit");
+	private Button connect = new Button("Connect");
+	private TextField ipAddress = new TextField("127.0.0.1");
+	private TextField portNumber = new TextField("8080");
+	private Label label = new Label("Set server IP and port");
+	private Label musicVolumeLabel = new Label("Change music volume");
+	private Slider musicVolumeSlider = new Slider(1,10,10);
+	private Label soundEffectsVolumeLabel = new Label("Change sound effects volume");
+	private Slider soundEffectsVolumeSlider = new Slider(1,10,10);
+	private VBox vBox;
+	private HBox hBox;
+	private HBox sliderHBox;
+	private VBox vBox1;
+	private VBox vBox2;
+	private RadioButton buttonHuman = new RadioButton("Human");;
+	private RadioButton buttonPC = new RadioButton("Computer");;
+	private boolean multiplayerHBoxShowing;
+	private boolean settingsHBoxShowing;
+
+	/**
+	 * Constructor. Creates the main Menu
+	 */
+	public MainMenu(GameView gameView) {
+		this.gameView = gameView;
+		vBox = new VBox(20);
+		hBox = new HBox(20);
+		sliderHBox = new HBox(10);
+		sliderHBox.setAlignment(Pos.CENTER);
+		hBox.setAlignment(Pos.CENTER);
+		root = vBox;
+
+		// VBox layout = new VBox(20);
+		// root = layout;
+		vBox.setAlignment(Pos.CENTER);
+
+		musicVolumeSlider.setShowTickLabels(true);
+		musicVolumeSlider.setShowTickMarks(true);
+		musicVolumeSlider.setMajorTickUnit(1);
+		musicVolumeSlider.setMinorTickCount(0);
+		musicVolumeSlider.setSnapToTicks(true);
+		musicVolumeSlider.setBlockIncrement(1);
+
+		soundEffectsVolumeSlider.setShowTickLabels(true);
+		soundEffectsVolumeSlider.setShowTickMarks(true);
+		soundEffectsVolumeSlider.setMajorTickUnit(1);
+		soundEffectsVolumeSlider.setMinorTickCount(0);
+		soundEffectsVolumeSlider.setSnapToTicks(true);
+		soundEffectsVolumeSlider.setBlockIncrement(1);
+
+		vBox1 = new VBox(10);
+		vBox1.getChildren().addAll(musicVolumeLabel,musicVolumeSlider);
+		vBox1.setAlignment(Pos.CENTER);
+		vBox2 = new VBox(10);
+		vBox2.getChildren().addAll(soundEffectsVolumeLabel, soundEffectsVolumeSlider);
+		vBox2.setAlignment(Pos.CENTER);
+		sliderHBox.getChildren().addAll(vBox1, vBox2);
+
+		// Set offset position
+		singlePlayer.setTranslateY(60);
+		multiplayer.setTranslateY(60);
+		rules.setTranslateY(60);
+		settings.setTranslateY(60);
+		credits.setTranslateY(60);
+		quit.setTranslateY(60);
+		label.setTranslateY(60);
+		ipAddress.setTranslateY(60);
+		portNumber.setTranslateY(60);
+		musicVolumeLabel.setTranslateY(40);
+		musicVolumeSlider.setTranslateY(40);
+		soundEffectsVolumeLabel.setTranslateY(40);
+		soundEffectsVolumeSlider.setTranslateY(40);
+		buttonHuman.setTranslateY(60);
+		buttonPC.setTranslateY(60);
+		connect.setTranslateY(80);
+		hBox.setTranslateY(80);
+		sliderHBox.setTranslateY(40);
+
+		// Add a shadow
+		DropShadow dropShadow = new DropShadow();
+		dropShadow.setRadius(4.0);
+		dropShadow.setOffsetX(-10.0);
+		dropShadow.setOffsetY(10.0);
+		dropShadow.setColor(Color.color(0, 0, 0, 0.7));
+		// Set id
+		singlePlayer.setId("MenuButton");
+		multiplayer.setId("MenuButton");
+		rules.setId("MenuButton");
+		settings.setId("MenuButton");
+		credits.setId("MenuButton");
+		quit.setId("MenuButton");
+		connect.setId("MenuButton");
+
+		singlePlayer.setEffect(dropShadow);
+		multiplayer.setEffect(dropShadow);
+		rules.setEffect(dropShadow);
+		settings.setEffect(dropShadow);
+		credits.setEffect(dropShadow);
+		quit.setEffect(dropShadow);
+		connect.setEffect(dropShadow);
+		ipAddress.setEffect(dropShadow);
+		portNumber.setEffect(dropShadow);
+
+		DropShadow dropShadow2 = new DropShadow();
+		dropShadow2.setRadius(5.0);
+		dropShadow2.setOffsetX(-5.0);
+		dropShadow2.setOffsetY(5.0);
+		dropShadow2.setColor(Color.color(0, 0, 0, 0.6));
+
+		label.setEffect(dropShadow2);
+		musicVolumeLabel.setEffect(dropShadow2);
+		soundEffectsVolumeLabel.setEffect(dropShadow2);
+		buttonHuman.setEffect(dropShadow2);
+		buttonPC.setEffect(dropShadow2);
+
+		// Add a background image to the scene
+		Vector2D<Double> bounds = new Vector2D<>(GameStart.gameView.getPrimaryStage().getScene().getWidth(),GameStart.gameView.getPrimaryStage().getScene().getHeight());
+
+
+		vBox.setBackground(gameView.getBackground("MainMenuBackground1.jpg",
+				new BackgroundSize(bounds.x, bounds.y, false, false, true, false), false));
+
+		// Set up a font
+		Font fontBasic = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(),
+				bounds.y / 45);
+		//hBox.setPadding(new Insets(0, 0, -bounds.getHeight() / 10, 0));
+
+		ipAddress.setMaxWidth(bounds.x / 6);
+		ipAddress.setMinWidth(bounds.x / 6);
+		ipAddress.setAlignment(Pos.CENTER);
+
+		portNumber.setMaxWidth(bounds.x / 6);
+		portNumber.setMinWidth(bounds.x / 6);
+		portNumber.setAlignment(Pos.CENTER);
+
+		musicVolumeSlider.setMaxWidth(bounds.x / 6);
+		musicVolumeSlider.setMinWidth(bounds.x / 6);
+		soundEffectsVolumeSlider.setMaxWidth(bounds.x / 6);
+		soundEffectsVolumeSlider.setMinWidth(bounds.x / 6);
+
+		// Assign font
+		singlePlayer.setFont(fontBasic);
+		multiplayer.setFont(fontBasic);
+		rules.setFont(fontBasic);
+		settings.setFont(fontBasic);
+		credits.setFont(fontBasic);
+		quit.setFont(fontBasic);
+		connect.setFont(fontBasic);
+		ipAddress.setFont(fontBasic);
+		portNumber.setFont(fontBasic);
+		label.setFont(fontBasic);
+		musicVolumeLabel.setFont(fontBasic);
+		soundEffectsVolumeLabel.setFont(fontBasic);
+		buttonHuman.setFont(fontBasic);
+		buttonPC.setFont(fontBasic);
+
+		// Create radio buttons (for multiplayer before connecting!)
+		ToggleGroup group = new ToggleGroup();
+		buttonHuman.setToggleGroup(group);
+		buttonHuman.setSelected(true);
+		buttonPC.setToggleGroup(group);
+
+		// Add objects to layout
+		GameStart.soundManager.playEntranceSound();
+		vBox.getChildren().addAll(singlePlayer, multiplayer, rules, settings, credits, quit);
+	}
+
+	/**
+	 * Adds or removes the HBox.
+	 */
+	public void changeMultiplayerHBox() {
+		if (!multiplayerHBoxShowing) {
+			multiplayer.setText("Back");
+			settings.setText("Multiplayer");
+			vBox.getChildren().clear();
+			hBox.getChildren().clear();
+			hBox.getChildren().addAll(rules, settings, quit);
+			vBox.getChildren().addAll(singlePlayer, multiplayer, label, ipAddress, portNumber, buttonHuman, buttonPC,
+					connect);
+			vBox.getChildren().add(hBox);
+			settingsHBoxShowing = false;
+			multiplayerHBoxShowing = true;
+
+		} else {
+			multiplayer.setText("Multiplayer");
+			settings.setText("Settings");
+			vBox.getChildren().remove(hBox);
+			vBox.getChildren().clear();
+			vBox.getChildren().addAll(singlePlayer, multiplayer, rules, settings, credits, quit);
+			multiplayerHBoxShowing = false;
+			settingsHBoxShowing = false;
+		}
+
+	}
+	public void changeSettingsHBox(){
+		if(!settingsHBoxShowing) {
+			settings.setText("Back");
+			multiplayer.setText("Multiplayer");
+			vBox.getChildren().clear();
+			hBox.getChildren().clear();
+			hBox.getChildren().addAll(quit);
+			vBox.getChildren().addAll(singlePlayer, multiplayer, rules, credits, settings, sliderHBox);
+			vBox.getChildren().add(hBox);
+			multiplayerHBoxShowing = false;
+			settingsHBoxShowing = true;
+		}
+		else{
+			multiplayer.setText("Multiplayer");
+			settings.setText("Settings");
+			vBox.getChildren().remove(hBox);
+			vBox.getChildren().clear();
+			vBox.getChildren().addAll(singlePlayer, multiplayer, rules, settings, credits, quit);
+			multiplayerHBoxShowing = false;
+			settingsHBoxShowing = false;
+		}
+	}
+
+	// Getter & Setter
+	/**
+	 * Returns the main menu's root.
+	 *
+	 * @return root
+	 */
+	public Parent getRoot() {
+		return root;
+	}
+
+	/**
+	 * Returns the application which is the view of the entire game
+	 *
+	 * @return gameView
+	 */
+	public GameView getGameView() {
+		return gameView;
+	}
+
+	/**
+	 * Returns the singelplayer button
+	 *
+	 * @return singlePlayer
+	 */
+	public Button getSinglePlayerButton() {
+		return singlePlayer;
+	}
+
+	/**
+	 * Returns the multiplayer button
+	 *
+	 * @return multiplayer
+	 */
+	public Button getMultiplayerButton() {
+		return multiplayer;
+	}
+
+	/**
+	 * Returns the rules button
+	 *
+	 * @return rules
+	 */
+	public Button getRulesButton() {
+		return rules;
+	}
+
+	/**
+	 * Returns the settings button
+	 *
+	 * @return settings
+	 */
+	public Button getSettingsButton() {
+		return settings;
+	}
+
+	/**
+	 * Returns the credits button
+	 *
+	 * @return settings
+	 */
+	public Button getCreditsButton() {
+		return credits;
+	}
+
+
+	/**
+	 * Returns the quitGame button
+	 *
+	 * @return quitGame
+	 */
+	public Button getQuitButton() {
+		return quit;
+	}
+
+	public Button getConnectButton() {
+		return connect;
+	}
+
+	public TextField getPortNumber() {
+		return portNumber;
+	}
+
+	public TextField getIpAddress() {
+		return ipAddress;
+	}
+	public Slider getMusicVolumeSlider(){
+		return musicVolumeSlider;
+	}
+	public Slider getSoundEffectsVolumeSlider(){
+		return soundEffectsVolumeSlider;
+	}
+
+	/**
+	 * @return the buttonHuman
+	 */
+	public RadioButton getButtonHuman() {
+		return buttonHuman;
+	}
+
+	/**
+	 * @return the buttonPC
+	 */
+	public RadioButton getButtonPC() {
+		return buttonPC;
+	}
+
+}

@@ -1,0 +1,268 @@
+import java.util.ArrayList;
+
+import gameworld.HexagonField;
+import gameworld.WayPoint;
+import gameworld.World;
+import networking.MessageObjects.MaritimeTrade;
+import networking.MessageObjects.PlayerForProtocol;
+import networking.MessageObjects.Resources;
+import tools.BuildingType;
+import tools.PortTypes;
+import tools.Vector2D;
+import networking.MessageObjects.Building;
+
+/**
+ * Checks if (client requests are legal)
+ *
+ * @author Marcelina, Felip
+ */
+public final class ServerRequestCheck {
+
+
+    public static ArrayList<String> crossingsList;
+    //Main requests
+
+
+    /**
+     * Checks if a build request is valid
+     *
+     * @param requestedBuilding The build request
+     * @param initialPhase      True if initial phase
+     * @return
+     */
+    public final static boolean buildingCheck(Building requestedBuilding, boolean initialPhase) {
+        BuildingType requestedBuildingType = tools.WorldTranslation.getServerBuildingTypeToClientBuildingType(requestedBuilding.getType());
+        int id = requestedBuilding.getOwner();
+        boolean check = false;
+        //check if the player has enough buildings available
+        switch (requestedBuilding.getType()){
+	    	case("Strasse"):
+	    		if ((ServerMemoryLogic.playerIdToAvailableBuildings.get(requestedBuilding.getOwner())[0]==0)){
+	    			System.out.println("all streets used");
+	    			return false;
+	    		}
+	    		break;
+	    	case("Dorf"):
+	    		if ((ServerMemoryLogic.playerIdToAvailableBuildings.get(requestedBuilding.getOwner())[1]==0)){
+	    			System.out.println("all settlements used");
+	    			return false;
+	    		}
+	    		break;
+	        case("Stadt"):
+    			if ((ServerMemoryLogic.playerIdToAvailableBuildings.get(requestedBuilding.getOwner())[2]==0)){
+	    			System.out.println("all castles used");
+    				return false;
+    			}
+	        	break; 
+        }
+        //check if already occupied
+        BuildingType currentBuildingType = ServerMemoryLogic.serverMap.isOccupiedBy(requestedBuilding.getLocation());
+        if ((currentBuildingType == BuildingType.VILLAGE) && (requestedBuildingType == BuildingType.CASTLE))
+            check = checkCityRequest(requestedBuilding);
+        else if ((currentBuildingType == BuildingType.NONE) && (requestedBuildingType == BuildingType.STREET))
+            check = checkStreetRequest(requestedBuilding, initialPhase, false);
+        else if ((currentBuildingType == BuildingType.NONE) && (requestedBuildingType == BuildingType.VILLAGE))
+            check = checkSettlementRequest(requestedBuilding, initialPhase);
+        else check = false;
+        System.out.println("BUILD CHECK: " + check);
+        return check;
+    }
+
+    /**
+     * Checks if a maritime request is valid
+     *
+     * @param maritimeTrade
+     * @param player
+     * @return
+     */
+    public static boolean mariTimeTradeCheck(MaritimeTrade maritimeTrade, PlayerForProtocol player) {
+        //we assume only one type of resource is traded at once
+        //check whether it's the player's turn
+        if (!player.getStatus().equals("Handeln oder Bauen")) return false;
+        Resources supply = maritimeTrade.getResourcesSupply();
+        try {
+            if (supply.getWood() != 0) {
+                switch (supply.getWood()) {
+                    case 4:
+                        return checkIfEnoughResources(player, new Resources(4, 0, 0, 0, 0, 0));
+                    case 3:
+                        return checkIfEnoughResources(player, new Resources(3, 0, 0, 0, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.THREE_FOR_ONE);
+                    case 2:
+                        return checkIfEnoughResources(player, new Resources(2, 0, 0, 0, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.TWO_WOOD_FOR_ONE);
+                }
+            } else if (supply.getLoam() != 0) {
+                switch (supply.getLoam()) {
+                    case 4:
+                        return checkIfEnoughResources(player, new Resources(0, 4, 0, 0, 0, 0));
+                    case 3:
+                        return checkIfEnoughResources(player, new Resources(0, 3, 0, 0, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.THREE_FOR_ONE);
+                    case 2:
+                        return checkIfEnoughResources(player, new Resources(0, 2, 0, 0, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.TWO_LOAM_FOR_ONE);
+                }
+            } else if (supply.getWool() != 0) {
+                switch (supply.getWool()) {
+                    case 4:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 4, 0, 0, 0));
+                    case 3:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 3, 0, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.THREE_FOR_ONE);
+                    case 2:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 2, 0, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.TWO_WOOL_FOR_ONE);
+                }
+            } else if (supply.getGrain() != 0) {
+                switch (supply.getGrain()) {
+                    case 4:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 0, 4, 0, 0));
+                    case 3:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 0, 3, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.THREE_FOR_ONE);
+                    case 2:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 0, 2, 0, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.TWO_GRAIN_FOR_ONE);
+                }
+            } else if (supply.getStone() != 0) {
+                switch (supply.getStone()) {
+                    case 4:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 0, 0, 4, 0));
+                    case 3:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 0, 0, 3, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.THREE_FOR_ONE);
+                    case 2:
+                        return checkIfEnoughResources(player, new Resources(0, 0, 0, 0, 2, 0)) && ServerMemoryLogic.serverMap.checkIfOwnPortNearby(player, PortTypes.TWO_STONE_FOR_ONE);
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    //Minor requests
+
+    /**
+     * Checks if the field is not already occupied by any player and if the street is next to the players settlement
+     *
+     * @param initialPhase
+     * @return
+     */
+    protected final static boolean checkStreetRequest(Building building, boolean initialPhase, boolean roadBuildingCardPlayed) {
+        //return immediately false if status mismatch
+        if (!checkStatusMatch(building.getOwner(), "Strasse bauen") && !checkStatusMatch(building.getOwner(), "Handeln oder Bauen") 
+        		&& !(checkStatusMatch(building.getOwner(), "Wuerfeln") && roadBuildingCardPlayed))
+            return false;
+            //We must check if the field is not already occupied and if the street is next to the players settlement
+            //Check if field is next to the player's settlement/city/road
+        else if (ServerMemoryLogic.initialPhaseRemainingTurns > 4||roadBuildingCardPlayed) {
+            return ServerMemoryLogic.serverMap.streetCheckForOwnBuildingNearby(building.getOwner(), building.getLocation(), getCrossings());
+        } else if (ServerMemoryLogic.initialPhaseRemainingTurns > 0) {
+            return ServerMemoryLogic.serverMap.streetCheckIfGivenBuildingNearby(ServerMemoryLogic.playerIdToSecondInitialPhaseSettlement.get(building.getOwner()).getLocation(), building.getLocation());
+        } else if (ServerMemoryLogic.serverMap.streetCheckForOwnBuildingNearby(building.getOwner(), building.getLocation(), getCrossings())) {
+            return checkIfEnoughResources(ServerMemoryLogic.findPlayerByID(building.getOwner()), new Resources(1, 1, 0, 0, 0, 0));
+        } else return false;
+    }
+
+    /**
+     * checks if settlement can be built by player (if there are enough resources and no other building is nearby)
+     * @param building
+     * @param initialPhase
+     * @return
+     */
+    private final static boolean checkSettlementRequest(Building building, boolean initialPhase) {
+        String location = building.getLocation();
+        //return immediately false if status mismatch
+        if (!checkStatusMatch(building.getOwner(), "Dorf bauen") && !checkStatusMatch(building.getOwner(), "Handeln oder Bauen"))
+            return false;
+            //in the initial phase settlements are placed regardless of the own streets
+        else if (ServerMemoryLogic.serverMap.checkIfNoBuildingNearby(location)) {
+            if (initialPhase) {
+                if (ServerMemoryLogic.initialPhaseRemainingTurns < 5)
+                    ServerMemoryLogic.playerIdToSecondInitialPhaseSettlement.put(building.getOwner(), building);
+                return true;
+            } else {
+                return ServerMemoryLogic.serverMap.villageCheckForStreetNearby(building.getOwner(), building.getLocation())
+                		&& checkIfEnoughResources(ServerMemoryLogic.findPlayerByID(building.getOwner()), new Resources(1, 1, 1, 1, 0, 0))&&ServerMemoryLogic.serverMap.buildingCheckForStreetNearby(location);
+            }
+        } else {
+        	return false;
+        }
+    }
+
+    /**
+     * Checks if city/castle can be built by player
+     * @param building
+     * @return
+     */
+    private static boolean checkCityRequest(Building building) {
+        return checkStatusMatch(building.getOwner(), "Handeln oder Bauen");
+    }
+    /**
+     * checks if player can buy a develoment card
+     * @param player 
+     * @return
+     */
+	public static boolean checkIfAbleToBuyDevelopmentCard(PlayerForProtocol player) {
+		//you can only request a development card if your in the trading and building phase
+		return player.getStatus().equals("Handeln oder Bauen")&&checkIfEnoughResources(player,new Resources(0,0,1,1,1,0));
+	}
+    
+	
+	//Helper functions
+
+    /**
+     * checks if it's the players turn (otherwise they are not allowed to make a move)
+     *
+     * @param player player to be checked
+     * @return boolean value indicating whether it's the player's turn
+     */
+    public static boolean checkIfPlayersTurn(PlayerForProtocol player) {
+        System.out.println("turn: " + ServerMemoryLogic.getCurrentPlayer().getColor());
+        return (ServerMemoryLogic.getCurrentPlayer() == player);
+    }
+
+    /**
+     * general method allows to check if a player has enough resources for the requested action
+     *
+     * @return
+     */
+    public static boolean checkIfEnoughResources(PlayerForProtocol player, Resources requiredResources) {
+        if (player.getResources().getWood() < requiredResources.getWood()) return false;
+        else if (player.getResources().getWool() < requiredResources.getWool()) return false;
+        else if (player.getResources().getGrain() < requiredResources.getGrain()) return false;
+        else if (player.getResources().getLoam() < requiredResources.getLoam()) return false;
+        else if (player.getResources().getStone() < requiredResources.getStone()) return false;
+        else return true;
+    }
+
+    /**
+     * Checks if a player (found by his unique id) matches a given status
+     *
+     * @param id     The player's id
+     * @param status The status to match
+     * @return True, if status matches.
+     */
+    public static final boolean checkStatusMatch(Integer id, String status) {
+        System.out.println(ServerMemoryLogic.findPlayerByID(id).getStatus() + "_" + status);
+        return status.equals(ServerMemoryLogic.findPlayerByID(id).getStatus());
+    }
+
+    /**
+     * returns the list of all possible 3 letters combinations(crossings)
+     *
+     * @return the array lists containing all the possible strings
+     */
+    public static ArrayList<String> getCrossings() {
+        if (crossingsList != null) return crossingsList;
+        ArrayList<String> crossings = new ArrayList<String>();
+        World world = new World();
+        ArrayList<WayPoint> allWayPoints = world.getWayPoints();
+        for (WayPoint wayPoint : allWayPoints) {
+            String crossing = "";
+            ArrayList<HexagonField> neighbors = wayPoint.getFieldNeighbours();
+            if (neighbors.size() == 3) {
+                for (HexagonField neighbor : neighbors) {
+                    crossing += tools.WorldTranslation.getPositionToLetter(new Vector2D<Integer>(neighbor.getPosition().x, neighbor.getPosition().y));
+                }
+            }
+            crossings.add(crossing);
+        }
+        crossingsList = crossings;
+        return crossings;
+    }
+
+}

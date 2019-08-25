@@ -1,0 +1,171 @@
+package menu;
+
+import java.util.ArrayList;
+
+import application.GameStart;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Parent;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.stage.Screen;
+import javafx.util.Duration;
+import resources.ResourcePointer;
+import view.GameView;
+
+/**
+ * This class simulates the Credits of our game. A simple black background with
+ * rolling text and names.
+ *
+ * @author Panos
+ *
+ */
+public class Credits {
+
+	/**
+	 * a boolean to check if we are currently in the credits screen
+	 *
+	 */
+	private Boolean isCreditsScreen = false;
+
+	/**
+	 * sets up credits screen with a timeline + styling of Buttons, Labels etc.
+	 *
+	 * @param gameView
+	 * @return VBox layout
+	 */
+	public Parent getCreditsLayout(GameView gameView) {
+
+		// create the main layout and position it
+		VBox layout = new VBox(100);
+		layout.setAlignment(Pos.TOP_CENTER);
+
+		// gets bounds to draw buttons/labels etc. relative to the screen resolution
+		Screen screen = Screen.getPrimary();
+		Rectangle2D bounds = screen.getVisualBounds();
+
+		// different font sizes for different texts
+		Font fontLabelVeryBig = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(),
+				bounds.getHeight() / 10);
+
+		Font fontLabelBig = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(),
+				bounds.getHeight() / 30);
+
+		// now I create a bunch of vboxes to add them later to an arraylist of vboxes
+		// with a specific distance inbetween
+
+		VBox vbox1 = new VBox(100);
+		Label label1 = new Label("-Credits-");
+		label1.setFont(fontLabelVeryBig);
+		Label label2 = new Label("The Settlers of Catan");
+		Label label3 = new Label("Ludwig-Maximilians-University Munich");
+		Label label4 = new Label("A Group Project for the Software Development Practicum");
+		vbox1.setAlignment(Pos.TOP_CENTER);
+		vbox1.getChildren().addAll(label1, label2, label3, label4);
+
+		VBox vbox2 = new VBox(10);
+		Label label5 = new Label("-Practicum Supervisors-");
+		Label label6 = new Label("Prof. Dr. Peer Kröger");
+		Label label7 = new Label("Janina Sontheim");
+		Label label8 = new Label("Daniel Kaltenthaler");
+		Label label9 = new Label("Johannes Lohrer");
+		vbox2.setAlignment(Pos.TOP_CENTER);
+		vbox2.getChildren().addAll(label5, label6, label7, label8, label9);
+
+		VBox vbox3 = new VBox(10);
+		Label label10 = new Label("-Tutors-");
+		Label label11 = new Label("Arian Weber");
+		vbox3.setAlignment(Pos.TOP_CENTER);
+		vbox3.getChildren().addAll(label10, label11);
+
+		VBox vbox4 = new VBox(10);
+		Label label12 = new Label("-Pikante Quizshows Developers-");
+		Label label13 = new Label("Minh Le");
+		Label label14 = new Label("Jonas Michl");
+		Label label15 = new Label("Felicitas Buchner");
+		Label label16 = new Label("Felip Guimerà Cuevas");
+		Label label17 = new Label("Marcelina Wisniewska");
+		Label label18 = new Label("Panagiotis Giannopoulos");
+		vbox4.setAlignment(Pos.TOP_CENTER);
+		vbox4.getChildren().addAll(label12, label13, label14, label15, label16, label17, label18);
+
+		VBox vbox5 = new VBox(10);
+		Label label19 = new Label("This software makes use of copyrighted material");
+		Label label20 = new Label("It was created solely for study and educational purposes.");
+		Label label21 = new Label("No copyright(s) is/are claimed");
+		vbox5.setAlignment(Pos.TOP_CENTER);
+		vbox5.getChildren().addAll(label19, label20, label21);
+
+		VBox vbox6 = new VBox(600);
+		Label labelspace = new Label(" ");
+		Label label22 = new Label("Thanks for playing!");
+		vbox6.setAlignment(Pos.TOP_CENTER);
+		vbox6.getChildren().addAll(labelspace, label22);
+		label22.setFont(fontLabelVeryBig);
+
+		Label[] stringArray = { label2, label3, label4, label5, label6, label7, label8, label9, label10, label11,
+				label12, label13, label14, label15, label16, label17, label18, label19, label20, label21 };
+		for (int i = 0; i < stringArray.length; i++) {
+			stringArray[i].setFont(fontLabelBig);
+		}
+
+		// creates an arrayList that combines all vboxes/texts to one big vbox
+		ArrayList<VBox> arrayList = new ArrayList<VBox>();
+		arrayList.add(vbox1);
+		arrayList.add(vbox2);
+		arrayList.add(vbox3);
+		arrayList.add(vbox4);
+		arrayList.add(vbox5);
+		arrayList.add(vbox6);
+		layout.setTranslateY(bounds.getHeight() + 100);
+
+		// adds arraylist with all its children to the main layout
+		for (int i = 0; i < arrayList.size(); i++) {
+			layout.getChildren().add(arrayList.get(i));
+		}
+
+		// Adds a timeline to roll the credits
+		Timeline timeline = new Timeline();
+		timeline.setCycleCount(0); // just one roll
+
+		// the next part creates keyvalues and keyframes and adds them to the timeline
+		KeyValue kv = new KeyValue(layout.translateYProperty(), -(bounds.getHeight() * 3 - 300));
+		KeyFrame kf = new KeyFrame(Duration.millis(40000), kv);
+		timeline.getKeyFrames().addAll(kf);
+		timeline.play(); // start rolling the credits
+		// after the timeline finishes it switches to the main menu automatically
+		timeline.setOnFinished(e -> {
+			isCreditsScreen = false;
+			GameStart.gameView.createMainMenuScene();
+		});
+
+		// Add a black background
+		layout.setStyle("-fx-background: #000000;");
+
+		// Return layout
+		return layout;
+	}
+
+	/**
+	 * Getter for the isCreditsScreen attribute
+	 *
+	 * @return
+	 */
+	public Boolean getIsCreditsScreen() {
+		return isCreditsScreen;
+	}
+
+	/**
+	 * Setter for the isCreditsScreen attribute
+	 *
+	 * @param isCreditsScreen
+	 */
+	public void setIsCreditsScreen(Boolean isCreditsScreen) {
+		this.isCreditsScreen = isCreditsScreen;
+	}
+
+}

@@ -1,0 +1,42 @@
+package gameobjects.Elements;
+
+import tools.Vector2D;
+
+
+/**
+ * Simulates a thief in game object
+ */
+public class Thief extends GameElement{
+
+
+	/**
+	 * The thief's position on the map.
+	 */
+	private Vector2D<Integer> vector;
+
+	/**
+	 * Constructor
+	 * Creates a thief for the game.
+	 * Sets the thief on a starting position in the beginning.
+	 * @param position Starting position of the thief
+	 */
+	public Thief(Vector2D<Integer> position){
+		this.vector = position;
+	}
+
+	/**
+	 * Getter for the thiefs position
+	 * @return Thiefs position
+	 */
+	public Vector2D<Integer> getThiefPosition() {
+		return vector;
+	}
+
+	/**
+     * Sets the thief in a new location on the map.
+     * @param newPosition This is the thief's new location
+     */
+	public void setThiefLocation(Vector2D<Integer> newPosition){
+		this.vector = newPosition;
+	}
+}

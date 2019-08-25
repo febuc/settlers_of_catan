@@ -1,0 +1,106 @@
+package menu;
+
+
+import javafx.scene.Parent;
+import javafx.scene.control.TextArea;
+import view.GameView;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.layout.BackgroundSize;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.stage.Screen;
+import javafx.geometry.Rectangle2D;
+import resources.ResourcePointer;
+
+import java.io.*;
+import java.net.URL;
+
+import application.GameStart;
+
+public class Tutorial {
+
+    //private GameView gameview;
+
+    private MainMenu mainmenu;
+
+    public Parent getTutorialLayout(GameView gameView) {
+        VBox layout = new VBox(20);
+        layout.setAlignment(Pos.CENTER);
+
+
+        Button toMainMenu = new Button("Back to menu");
+        toMainMenu.setId("MenuButton");
+
+        Screen screen = Screen.getPrimary();
+        Rectangle2D bounds = screen.getVisualBounds();
+
+        //Set up a font
+        Font fontButton = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(), bounds.getHeight() / 45);
+        Font fontBasic = Font.loadFont(ResourcePointer.class.getResource("thewitcher.ttf").toExternalForm(), bounds.getHeight() / 45);
+
+        //Load and set the style sheet
+
+        //Assign font
+        toMainMenu.setFont(fontButton);
+        //Create text area
+        TextArea textArea = new TextArea();
+        textArea.setMaxSize(gameView.getMainGameScene().getWidth() / 1.5, gameView.getMainGameScene().getHeight() / 1.5);
+        textArea.setMinSize(gameView.getMainGameScene().getWidth() / 1.5, gameView.getMainGameScene().getHeight() / 1.5);
+
+        textArea.setWrapText(true);
+        textArea.setEditable(false);
+        String text = getText();
+        textArea.setFont(fontBasic);
+        textArea.setText(text);
+
+
+        //Add objects to layout
+        layout.getChildren().addAll(textArea, toMainMenu);
+        layout.getStylesheets().add(ResourcePointer.class.getResource("Tutorial.css").toExternalForm());
+
+        //Add a background
+        layout.setBackground(gameView.getBackground("LandscapeFull.jpg", new BackgroundSize(bounds.getWidth(),
+                bounds.getHeight(), false, false, true, false), false));
+
+        //Define button action
+        toMainMenu.setOnAction(e -> goBackToMenu(gameView));
+        toMainMenu.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+
+        //Return layout
+        return layout;
+    }
+
+    /**
+     * Gets back to the main menu.
+     *
+     * @param gameView The gameViewClass
+     */
+    public void goBackToMenu(GameView gameView) {
+    	if (gameView.getWorldIsDrawn()) {
+    		gameView.createContinueMainMenuScene();
+    	}
+    	else gameView.createMainMenuScene();    		
+    }
+
+    /**
+     * Returns the rules as a string
+     *
+     * @return The rules as string.
+     */
+    private String getText() {
+        String text = "";
+        InputStream input = ResourcePointer.class.getResourceAsStream("GameRules.txt");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+        try {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Deal with the line
+                text += line+"\n";
+            }
+            return text;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+}

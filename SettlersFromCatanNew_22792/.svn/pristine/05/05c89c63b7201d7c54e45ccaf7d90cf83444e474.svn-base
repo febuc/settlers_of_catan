@@ -1,0 +1,460 @@
+package player;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import gameobjects.Cards.EvolutionCard;
+import gameobjects.Cards.InformationCard;
+import gameobjects.Cards.SpecialCard;
+import gameobjects.Elements.Settlement;
+import gameobjects.Elements.Street;
+import networking.MessageObjects.DevelopmentCards;
+import networking.MessageObjects.Resources;
+import tools.EvolutionType;
+import tools.PlayerTeam;
+import tools.ResourceType;
+
+/**
+ * This class contains everything a player owns (name, team/color, buildings,
+ * cards, points). Superclass of Human and Computer.
+ *
+ * @author Panos
+ */
+public class Player {
+
+    private PlayerTeam team;
+    private Integer playerID;
+    private String name;
+    private boolean isAI;
+    private int victoryPoints;
+    private int numberOfKnights;
+    private InformationCard informationCard;
+    private ArrayList<Street> streets;
+    private HashMap<String, ArrayList<Settlement>> settlements;
+    private HashMap<ResourceType, Integer> resources;
+    private HashMap<String, ArrayList<SpecialCard>> specialCards;
+    private HashMap<EvolutionType, Integer> evolutionCards;
+
+    private String status;
+    private boolean moveThiefDueToKnightCard = false;
+    private boolean isWaitingForTradeRequests = false;
+    private boolean playedDevelopmentCard = false;
+    private boolean hasLargestArmy = false;
+    private boolean hasLongestRoad = false;
+    
+    /**
+     * Stores all the development card bough this round. Must get reset every time we end our turn.
+     */
+    private HashMap<EvolutionType, Integer> developmentCardsBoughtThisRound;
+
+    /**
+     * Constructor of this class.
+     *
+     * @param team This is the team-color of the player.
+     * @param name This is the name of the player.
+     */
+    public Player(PlayerTeam team, String name) {
+        this.team = team;
+        this.name = name;
+        this.victoryPoints = 0;
+        this.informationCard = new InformationCard();
+        this.streets = new ArrayList<>();
+        this.settlements = new HashMap<>();
+        this.resources = new HashMap<>();
+
+        // Add default resource to 0
+        this.resources.put(ResourceType.LOAM, 0);
+        this.resources.put(ResourceType.GRAIN, 0);
+        this.resources.put(ResourceType.STONE, 0);
+        this.resources.put(ResourceType.WOOL, 0);
+        this.resources.put(ResourceType.WOOD, 0);
+        this.resources.put(ResourceType.HIDDEN, 0);
+
+        this.specialCards = new HashMap<>();
+        this.evolutionCards = new HashMap<>();
+        this.developmentCardsBoughtThisRound = new HashMap<>();
+
+        System.out.println("Player \"" + name + "\" in team " + team + " has been created");
+    }
+
+    /**
+     * Adds the newResources to the resources the player already had
+     *
+     * @param newResources
+     */
+    public void addResources(HashMap<ResourceType, Integer> newResources) {
+    	System.out.println("BEFORE ADDING: " + resources.toString());
+    	System.out.println("TO ADD: " + newResources.toString());
+
+        for (ResourceType type : newResources.keySet()) {
+            System.out.println(type + "_"+ resources.get(type));
+            if (resources.containsKey(type)) {
+                resources.put(type, resources.get(type) + newResources.get(type));
+            } else {
+                resources.put(type, newResources.get(type));
+            }
+        }
+    	System.out.println("AFTER ADDING: " + resources.toString());
+
+    }
+
+    /**
+     * subtracts the resourcesToSubtract to the resources the player already had
+     *
+     * @param resourcesToSubtract
+     */
+    public void subtractResources(HashMap<ResourceType, Integer> resourcesToSubtract) {
+    	System.out.println("BEFORE SUBTRACTING: " + resources.toString());
+    	System.out.println("TO SUBRTACT: " + resourcesToSubtract.toString());
+
+        for (ResourceType type : resourcesToSubtract.keySet()) {
+            if (resources.containsKey(type)) {
+                resources.put(type, Math.max(0, resources.get(type) - resourcesToSubtract.get(type)));
+            } else {
+                // If we are here we might have done something wrong...
+                resources.put(type, 0);
+            }
+        }
+    	System.out.println("AFTER SUBTRACTING: " + resources.toString());
+    }
+
+    /**
+     * Returns the player's team.
+     *
+     * @return player's team.
+     */
+    public PlayerTeam getTeam() {
+        return team;
+    }
+
+    /**
+     * @return this player's name.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets this player's name.
+     *
+     * @param name given name for the player.
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return true if player is a computer and false if the player is a human.
+     */
+    public boolean isAI() {
+        return isAI;
+    }
+
+    /**
+     * Change a boolean to true if the player is a computer or to false if it is a
+     * human.
+     *
+     * @param isAI
+     */
+    public void setAI(boolean isAI) {
+        this.isAI = isAI;
+    }
+
+    /**
+     * @return current points of the player.
+     */
+    public int getVictoryPoints() {
+        return victoryPoints;
+    }
+
+    /**
+     * Sets points to a specific number that was given.
+     *
+     * @param victoryPoints replace current points with this number.
+     */
+    public void setVictoryPoints(Integer victoryPoints) {
+        this.victoryPoints = victoryPoints == null ? 0 : victoryPoints;
+    }
+
+    /**
+     * Returns the number of resources given a certain type.
+     *
+     * @param type
+     * @return
+     */
+    public int getNumberOfResource(ResourceType type) {
+        Integer number = resources.get(type);
+        return number == null ? 0 : number.intValue();
+    }
+
+    public int getTotalNumberOfResources(){
+        return getNumberOfResource(ResourceType.WOOD)+
+                getNumberOfResource(ResourceType.WOOL)+
+                getNumberOfResource(ResourceType.GRAIN)+
+                getNumberOfResource(ResourceType.STONE)+
+                getNumberOfResource(ResourceType.LOAM);
+    }
+
+    /**
+     * @return the playerID
+     */
+    public Integer getPlayerID() {
+        return playerID;
+    }
+
+    /**
+     * @param playerID the playerID to set
+     */
+    public void setPlayerID(Integer playerID) {
+        this.playerID = playerID;
+    }
+
+    /**
+     * Get current number of knight cards. Necessary for achievement card "biggest
+     * army".
+     *
+     * @return number of knight cards.
+     */
+    public int getNumberOfKnights() {
+        return numberOfKnights;
+    }
+
+    /**
+     * Set current number of knight cards.
+     *
+     * @param numberOfKnights replace current number of knight cards with this number.
+     */
+    public void setNumberOfKnights(int numberOfKnights) {
+        this.numberOfKnights = numberOfKnights;
+    }
+
+    /**
+     * Get the information card of this player.
+     *
+     * @return information card of this player.
+     */
+    public InformationCard getInformationCard() {
+        return informationCard;
+    }
+
+    public ArrayList<Street> getStreets() {
+        return streets;
+    }
+
+    public void setStreets(ArrayList<Street> streets) {
+        this.streets = streets;
+    }
+
+    public HashMap<String, ArrayList<Settlement>> getSettlements() {
+        return settlements;
+    }
+
+    public void setSettlements(HashMap<String, ArrayList<Settlement>> settlements) {
+        this.settlements = settlements;
+    }
+
+    public HashMap<ResourceType, Integer> getResources() {
+        return resources;
+    }
+
+    public void setResources(HashMap<ResourceType, Integer> resources) {
+        this.resources = resources;
+    }
+
+    public HashMap<EvolutionType, Integer> getEvolutionCards() {
+        return evolutionCards;
+    }
+
+    public void setEvolutionCards(HashMap<EvolutionType, Integer> evolutionCards) {
+        this.evolutionCards = evolutionCards;
+    }
+
+    public HashMap<String, ArrayList<SpecialCard>> getSpecialCards() {
+        return specialCards;
+    }
+
+    public void setSpecialCards(HashMap<String, ArrayList<SpecialCard>> specialCards) {
+        this.specialCards = specialCards;
+    }
+
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Player other = (Player) obj;
+        if (playerID == null) {
+            if (other.playerID != null)
+                return false;
+        } else if (!playerID.equals(other.playerID))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Player{" +"id="+playerID+" color="+ team.toString()+" name="+name + " resources=" + resources + '}';
+    }
+
+    public boolean isWaitingForRequests() {
+        return isWaitingForTradeRequests;
+    }
+
+    /**
+     * @param isWaitingForTradeRequests the isWaitingForTradeRequests to set
+     */
+    public void setWaitingForTradeRequests(boolean isWaitingForTradeRequests) {
+        this.isWaitingForTradeRequests = isWaitingForTradeRequests;
+    }
+
+//    /**
+//     * Synchronizes the players resources
+//     *
+//     * @param resourcesOverwrite
+//     */
+//    public void overwriteResources(Resources resourcesOverwrite) {
+//        System.out.println("RESOURCE BEFORE OVERWRITE: " + resources);
+//        resources.put(ResourceType.GRAIN, resourcesOverwrite.getGrain());
+//        resources.put(ResourceType.LOAM, resourcesOverwrite.getLoam());
+//        resources.put(ResourceType.STONE, resourcesOverwrite.getStone());
+//        resources.put(ResourceType.WOOD, resourcesOverwrite.getWood());
+//        resources.put(ResourceType.WOOL, resourcesOverwrite.getWool());
+//        resources.put(ResourceType.HIDDEN, resourcesOverwrite.getHidden());
+//        System.out.println("RESOURCE AFTER OVERWRITE: " + resources);
+//    }
+
+    /**
+     * adds a single evolution card to the hashmap containing all evolution cards of the player
+     *
+     * @param cardType
+     */
+    public void addSingleEvolutionCard(EvolutionType cardType) {
+        if (evolutionCards.containsKey(cardType)) evolutionCards.put(cardType, evolutionCards.get(cardType) + 1);
+        else evolutionCards.put(cardType, 1);
+        //Add to cards bought this round (if not victory points, but does not really matter)
+        if (developmentCardsBoughtThisRound.containsKey(cardType))
+            developmentCardsBoughtThisRound.put(cardType, developmentCardsBoughtThisRound.get(cardType) + 1);
+        else developmentCardsBoughtThisRound.put(cardType, 1);
+
+    }
+
+    /**
+     * remove a single evolution card from the hashmap containing all evolution cards of the player
+     *
+     * @param cardType
+     */
+    public void removeSingleEvolutionCard(EvolutionType cardType) {
+        if (evolutionCards.containsKey(cardType)) {
+            if (evolutionCards.get(cardType) < 1) {
+                System.out.println("Player has no evolution cards of this type");
+                return;
+            } else if (evolutionCards.get(cardType) == 1) evolutionCards.remove(cardType);
+            else evolutionCards.put(cardType, evolutionCards.get(cardType) - 1);
+        } else evolutionCards.remove(cardType);
+    }
+
+    /**
+     * Changes moveThiefDueToKnightCard
+     *
+     * @param moveThiefDueToKnightCard
+     */
+    public void setMoveThiefDueToKnightCard(boolean moveThiefDueToKnightCard) {
+        this.moveThiefDueToKnightCard = moveThiefDueToKnightCard;
+    }
+
+    /**
+     * @return moveThiefDueToKnightCard
+     */
+    public boolean isMoveThiefDueToKnightCard() {
+        return moveThiefDueToKnightCard;
+    }
+
+    /**
+     * Getter for Boolean playedDevelopmentCard
+     *
+     * @return playedDevelopmentCard returns boolean
+     */
+    public boolean hasPlayedDevelopmentCard() {
+        return playedDevelopmentCard;
+    }
+
+    /**
+     * Setter for Boolean playedDevelopmentCard
+     */
+    public void setPlayedDevelopmentCard(boolean playedDevelopmentCard) {
+        this.playedDevelopmentCard = playedDevelopmentCard;
+        
+    }
+
+    /**
+     * Resets the the hash map "developmentCardsBoughtThisRound"
+     */
+    public void resetDevelopmentCardsBoughtThisRound() {
+        developmentCardsBoughtThisRound.clear();
+    }
+
+    /**
+     * Checks if we did not buy a certain development card this round (or already bought cards of the same type prior)
+     * @return returns true if the card was not bought in this round (ergo we can play it)
+     */
+    public boolean checkIfWeDidNotBuyCardThisRound(EvolutionType type) {
+        return developmentCardsBoughtThisRound.get(type) == null ||
+        		(evolutionCards.get(type) != null && developmentCardsBoughtThisRound.get(type) < evolutionCards.get(type));
+    }
+    
+    /**
+     * Getter for boolean if this player has the largest army
+     */
+	public boolean hasLargestArmy() {
+		return hasLargestArmy;
+	}
+	
+	/**
+     * Setter for boolean hasLargesArmy
+     */
+	public void setHasLargestArmy(boolean hasLargestArmy) {
+		this.hasLargestArmy = hasLargestArmy;
+	}
+	
+	/**
+     * Getter for boolean if this player has the longest road
+     */
+	public boolean hasLongestRoad() {
+		return hasLongestRoad;
+	}
+	
+	/**
+     * Setter for boolean hasLongestRoad
+     */
+	public void setHasLongestRoad(boolean hasLongestRoad) {
+		this.hasLongestRoad = hasLongestRoad;
+	}
+	
+	/**
+	 * @return the number of developmentcards this player has
+	 */
+	public int getTotalNumberOfDevelopmentCards(){
+		int result = 0;
+		for(HashMap.Entry<EvolutionType,Integer> entry : evolutionCards.entrySet()){
+			result += entry.getValue();
+		}
+		return result;
+	}
+}

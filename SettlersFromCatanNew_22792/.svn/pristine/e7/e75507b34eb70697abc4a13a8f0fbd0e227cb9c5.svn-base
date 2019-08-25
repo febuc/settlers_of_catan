@@ -1,0 +1,135 @@
+package controller;
+
+import application.GameStart;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import tools.EvolutionType;
+
+/**
+ * Controller class for the card
+ */
+public final class CardController {
+
+	/**
+	 * Constructor
+	 *
+	 * @param cardImage
+	 */
+	public CardController(Button cardImage) {
+		cardImage.setOnMouseEntered(e -> {
+			if (cardImage.getGraphic() != null)
+				cardImage.getGraphic().setOpacity(0.7);
+			GameStart.soundManager.playSoundOnButtonHover();
+		});
+		cardImage.setOnMouseExited(e -> {
+			if (cardImage.getGraphic() != null)
+				cardImage.getGraphic().setOpacity(1);
+		});
+
+	}
+
+	/**
+	 * Defines action handling for clicking on a knight card
+	 * 
+	 * @param cardImage
+	 */
+	public void defineKnightCardActions(Button cardImage) {
+		cardImage.setOnMouseClicked(e -> {
+			// Check if we can use the card (if we did not buy it this round)
+			if (!GameStart.siedlerVonCatan.findPlayerByID(GameStart.network.getConnectionHandler().getPlayerId())
+					.checkIfWeDidNotBuyCardThisRound(EvolutionType.KNIGHT)) {
+				GameStart.gameView
+						.displayLargeErrorMessage("You can not use knight cards you bought in your current round!");
+				return;
+			}
+			// Prevent multiple clicking
+			if (GameStart.siedlerVonCatan.findPlayerByID(GameStart.network.getConnectionHandler().getPlayerId())
+					.isMoveThiefDueToKnightCard() == true)
+				return;
+			// Cancels the activation of a knight/ roadbuilding card
+			GameStart.gameView.resetStreetsCardChosen();
+			GameStart.gameView.removeMenus();
+			GameStart.network.getClientProtocol().requestToPlayKnightCard();
+		});
+	}
+
+	/**
+	 * Defines action handling for clicking on a road building card
+	 * 
+	 * @param cardImage
+	 */
+	public void defineRoadBuildingCardActions(Button cardImage) {
+		cardImage.setOnMouseClicked(e -> {
+			// Check if we can use the card (if we did not buy it this round)
+			if (!GameStart.siedlerVonCatan.findPlayerByID(GameStart.network.getConnectionHandler().getPlayerId())
+					.checkIfWeDidNotBuyCardThisRound(EvolutionType.ROAD_BUILDING)) {
+				GameStart.gameView.displayLargeErrorMessage(
+						"You can not use road building cards you bought in your current round!");
+				return;
+			}
+			// Cancels the activation of a knight/ roadbuilding card
+			GameStart.gameView.resetKnightCardChosen();
+			GameStart.gameView.removeMenus();
+			GameStart.gameView.showTwoRoadBuildingView();
+			GameStart.siedlerVonCatan.setRoadBuildingCardPlayed(true);
+			System.out.println("road building card played: true");
+		});
+	}
+
+	/**
+	 * Defines action handling for clicking on a monopoly card
+	 * 
+	 * @param cardImage
+	 */
+	public void defineMonopolyCardActions(Button cardImage) {
+		cardImage.setOnMouseClicked(e -> {
+			// Check if we can use the card (if we did not buy it this round)
+			if (!GameStart.siedlerVonCatan.findPlayerByID(GameStart.network.getConnectionHandler().getPlayerId())
+					.checkIfWeDidNotBuyCardThisRound(EvolutionType.MONOPOLY)) {
+				GameStart.gameView
+						.displayLargeErrorMessage("You can not use monopoly cards you bought in your current round!");
+				return;
+			}
+			// Cancels the activation of a knight/ roadbuilding card
+			GameStart.gameView.resetKnightCardChosen();
+			GameStart.gameView.resetStreetsCardChosen();
+			GameStart.gameView.drawOptionsForMonopoly();
+			System.out.println("monopoly card played: true");
+		});
+	}
+
+	/**
+	 * Defines actions handling for clicking on a year of plenty card
+	 * 
+	 * @param cardImage
+	 */
+	public void defineYearOfPlentyCardActions(Button cardImage) {
+		cardImage.setOnMouseClicked(e -> {
+			// Check if we can use the card (if we did not buy it this round)
+			if (!GameStart.siedlerVonCatan.findPlayerByID(GameStart.network.getConnectionHandler().getPlayerId())
+					.checkIfWeDidNotBuyCardThisRound(EvolutionType.YEAR_OF_PLENTY)) {
+				GameStart.gameView.displayLargeErrorMessage(
+						"You can not use year of plenty cards you bought in your current round!");
+				return;
+			}
+			// Cancels the activation of a knight/ roadbuilding card
+			GameStart.gameView.resetKnightCardChosen();
+			GameStart.gameView.resetStreetsCardChosen();
+			// Null because we haven't chosen a resource yet
+			GameStart.gameView.drawOptionsForYearOfPleanty(null);
+		});
+	}
+
+	/**
+	 * Defines actions handling for clicking on a VictoryPointCard
+	 * 
+	 * @param cardImage
+	 */
+	public void defineVictoryPointCardActions(Button cardImage) {
+		cardImage.setOnMouseClicked(e -> {
+			// Display message
+			Platform.runLater(() -> GameStart.gameView
+					.displayLargeMessage("Victory points will be added automatically once you would win the game!"));
+		});
+	}
+}

@@ -1,0 +1,165 @@
+package menu;
+
+import application.GameStart;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Parent;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.BackgroundSize;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.stage.Screen;
+import resources.ResourcePointer;
+import view.GameView;
+
+/**
+ * Simulates a pause screen which will appear if the player clicks ESC during
+ * the game.
+ * 
+ * @author Panos
+ *
+ */
+public class PauseScreen {
+
+	/**
+	 * resume Button - brings you back to the game
+	 */
+	private Button resume = new Button("Resume");
+
+	/**
+	 * a boolean to check if we are currently in the pause screen
+	 * 
+	 */
+	private Boolean isPauseScreen = true;
+
+	public Parent getPauseLayout(GameView gameView) {
+		// creates the main layout and positions it
+		VBox layout = new VBox(20);
+		layout.setAlignment(Pos.CENTER);
+
+		// creates labels and buttons
+		Label label = new Label("Pause");
+		Button quitGameButton = new Button("Exit game");
+		Button mainMenuButton = new Button("Back to menu");
+		Button quitBackToMainMenu = new Button("Surrender");
+
+		resume.setId("MenuButton");
+		quitGameButton.setId("MenuButton");
+		quitBackToMainMenu.setId("MenuButton");
+		mainMenuButton.setId("MenuButton");
+
+		// gets bounds to draw buttons/labels etc. relative to the screen resolution
+		Screen screen = Screen.getPrimary();
+		Rectangle2D bounds = screen.getVisualBounds();
+
+		// Set up a font
+		Font fontBasic = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(),
+				bounds.getHeight() / 35);
+		Font fontLabel = Font.loadFont(ResourcePointer.class.getResource("PaladinFLF.ttf").toExternalForm(),
+				bounds.getHeight() / 10);
+
+		// Load and set the style sheet
+		DropShadow dropShadow = new DropShadow();
+		dropShadow.setRadius(5.0);
+		dropShadow.setOffsetX(-5.0);
+		dropShadow.setOffsetY(6.0);
+		dropShadow.setColor(Color.color(0, 0, 0, 0.6));
+		label.setEffect(dropShadow);
+		quitGameButton.setEffect(dropShadow);
+		resume.setEffect(dropShadow);
+		mainMenuButton.setEffect(dropShadow);
+		quitBackToMainMenu.setEffect(dropShadow);
+
+		label.setStyle("-fx-background-color:transparent; -fx-text-fill:White;");
+		label.setTranslateY(-80);
+
+		// Assign font
+		label.setFont(fontLabel);
+		resume.setFont(fontBasic);
+		quitGameButton.setFont(fontBasic);
+		mainMenuButton.setFont(fontBasic);
+		quitBackToMainMenu.setFont(fontBasic);
+
+		// Add objects to layout
+		layout.getChildren().addAll(label, resume, mainMenuButton, quitBackToMainMenu, quitGameButton);
+		layout.getStylesheets().add(ResourcePointer.class.getResource("Tutorial.css").toExternalForm());
+
+		// Add a background
+		layout.setBackground(gameView.getBackground("PauseBackGround.jpg",
+				new BackgroundSize(bounds.getWidth(), bounds.getHeight(), false, false, true, false), false));
+
+		// Define button action
+		resume.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+		quitGameButton.setOnMouseClicked(e -> {
+			if (isPauseScreen) {
+				isPauseScreen = false;
+				quitGame();
+			}
+
+		});
+		quitBackToMainMenu.setOnMouseClicked(e -> {
+			if (isPauseScreen){ 
+				GameStart.mainLogger.getLOGGER().fine("spiel wegen back to menu beenden"+isPauseScreen);
+				surrender();
+			}
+		});
+		mainMenuButton.setOnMouseClicked(e -> {
+			if (isPauseScreen) {
+				isPauseScreen = false;
+				GameStart.gameView.createContinueMainMenuScene();
+			}
+
+		});
+		quitGameButton.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+		mainMenuButton.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+		quitBackToMainMenu.setOnMouseEntered(event -> GameStart.soundManager.playSoundOnButtonHover());
+
+		// Return layout
+		return layout;
+	}
+
+	/**
+	 * a method that exits the game and disconnects you from the server
+	 */
+	public void quitGame() {
+		GameStart.network.getConnectionHandler().disconnectFromServer();
+		System.exit(0);
+	}
+
+	/**
+	 * method that gets you to the main menu again after the surrender screen
+	 */
+	public void surrender() {
+		GameStart.gameView.showGameOverScreen();
+	}
+
+	/**
+	 * Getter for the isPauseScreen attribute
+	 * 
+	 * @return isPauseScreen
+	 */
+	public Boolean getIsPauseScreen() {
+		return isPauseScreen;
+	}
+
+	/**
+	 * Setter for the isPauseScreen attribute
+	 * 
+	 * @param isPauseScreen
+	 */
+	public void setIsPauseScreen(Boolean isPauseScreen) {
+		this.isPauseScreen = isPauseScreen;
+	}
+	
+	/**
+	 * Getter for the resume button
+	 * @return resume
+	 */
+	public Button getResume() {
+		return resume;
+	}
+
+}

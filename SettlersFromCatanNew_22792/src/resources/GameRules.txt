@@ -1,0 +1,174 @@
+--------------------
+Setting up the game:
+--------------------
+
+Select a color. You get 5 settlements, 4 cities, 15 roads.
+Place your 2 roads and your 2 settlements on the game board.
+Then you receive resources for each terrain hex around your starting settlement.
+Your resource cards are hidden from other players.
+Important:
+Settlements and cities may only be placed at the corners of the terrain hexes--never along the
+edges.
+Roads may only be placed at the edges of the terrain hexes--1 road per edge.
+The Distance Rule means many intersections along roads will remain unoccupied.
+
+--------------
+Turn overview:
+--------------
+
+Either the oldest player goes first or it is decided with a dice roll (if the ai plays).
+On your turn, you can do the following in the order listed:
+- You must roll for resource production. The result applies to all players.
+- You may trade resource cards with other players and/or use maritime trade.
+- You may build roads, settlements or cities and/or buy development cards.
+- You may also play one development card at any time during the turn.
+Then your turn ends and the player to your left begins his/her turn.
+
+------------------
+The Turn in Detail
+------------------
+
+1. Resource Production
+
+You begin your turn by rolling both dice.
+The sum of the dice determines which terrain hexes produce resources.
+Each player who has a settlement on an intersection that borders a terrain hex marked with the
+number rolled receives 1 resource card of the hex's type.
+If you have 2 or 3 settlements bordering that hex, you receive 1 resource card for each
+settlement.
+You receive 2 resource cards for each city you own that borders that hex.
+If there are not enough of a given resource in the supply to fulfill everone's,
+production, then no one receives any of that resource during that turn (unless it only
+affects 1 player).
+
+2. Trade
+
+Afterwards, you may trade freely (using either or both types of trades below) to gain needed resource cards:
+
+a) Domestic Trade
+
+On your turn, you can trade resource cards with any of the other players. You can announce which resources you need an what you are willing to trade for them.
+The other players can also make their own proposals and counter offers.
+Important:
+Players may only trade with the player whose turn it is. The other players may not trade among
+themselves.
+
+b) Maritime Trade
+
+You can also trade without the other players! During your turn, you can always trade at 4:1 by
+putting 4 identical resource cards back in their stack and taking any 1 resource card of your
+choice for it.
+If you have a settlement or city on a harbor, you can trade with the bank more favorably: at
+either a 3:1 ratio or, in certain harbors, 2:1 (trading the resource type shown).
+Important:
+The 4:1 trade is always possible, even if you do not have a settlement on a harbor.
+
+3. Buildings and Construction
+
+Now you can build. Through building, you can increase your victory points, expand your road
+network, improve your resource production, and/or buy useful development cards.
+To build, you must pay specific combinations of resource cards (see the Building Costs Card).
+Take the appropriate number of roads settlements and/or cities from your supply and place them
+on the game board.
+Development cards are hidden in your hand.
+You cannot build more pieces than what is available in your pool-- a maximum of 5 settlements,
+4 cities and 15 roads.
+
+a) Road Requires: Brick & Lumber
+
+A new road must always connect to 1 of your existing roads, settlements or cities.
+Only 1 road can be built on any given path.
+The first player to build a continuous road (not counting forks) of at least 5 road segments
+receives the special card Longest Road.
+If another player succeeds in building a longer road than the one created by the current owner
+of the Longest Road card, he immediately takes the special card (and its 2 victory points).
+In this case, there is a 4 victory point swing!
+
+b) Settlement Requires: Brick, Lumber, Wool & Grain
+
+Take special note of the Distance Rule: you may only build a settlement at an intersection if
+all 3 of the adjacent intersections are vacant (i.e, none are occupied by any settlement or
+cities--even yours).
+Each of your settlements must connect to at least 1 of your own roads.
+Regardless of whose turn it is (i.e during any production phase), when a terrain hex produces
+resources, you receive 1 resource card for each settlement you have adjacent to that terrain
+hex.
+Each settlement is worth 1 point.
+
+c) City Requires: 3 Ore & 2 Grain
+
+You may only establish a city by upgrading one of your settlements.
+Cities produce twice as many resources as settlements.
+You acquire 2 resource cards for an adjacent terrain hex that produces resources.
+Each city is worth 2 points.
+
+d) Buying a Development Card Requires: Ore, Wool & Grain
+
+There are 3 different kinds of these cards: knight, progress, and victory point.
+Each has a different effect.
+Development cards never go back into the supply, and you cannot buy development cards if the
+supply is empty.
+Development cards are hidden until you use them, so your opponents can't anticipate your play.
+
+4. Special Cases
+
+a) Rolling a 7 and Activating the Robber
+
+If you roll a 7, no one receives any resources.
+Instead, every player who has more than 7 resource cards must select half (rounded down) of
+his resource cards and return them to the bank.
+Then you must move the robber. Proceed as follows:
+(1) You must move the robber immediately to the number token of any other terrain hex or to
+the desert hex.
+(2) Then you steal 1 (random) resource card from an opponent who has a settlement or city
+adjacent to the target terrain hex.
+If the target hex is adjacent to 2 or more player's settlements or cities, you choose which
+one you want to steal from.
+Important: If the production number for the hex containing the robber is rolled, the owners
+of adjacent settlements and cities do not receive resources.
+The robber prevents it.
+
+b) Playing Development Cards
+
+If you want to play a development card, put it face up on the table.
+That card, however, may not be a card you bought during the same turn (except for a victory
+point card)!
+
+-------------
+Knight Cards:
+-------------
+
+If you play a knight card, you must immediately move the robber.
+See 4.a) above and follow steps 1 and 2.
+Once played, knight cards remain face up in front of you.
+The first player to have 3 knight cards in front of himself receives the special card
+Largest Army, which is worth 2 victory points.
+If another player has more knight cards in front of him than the current holder of the
+Largest Army card, he immediately takes the special card and its 2 victory points.
+
+---------------
+Progress Cards:
+---------------
+
+If you play a progress card, follow its instructions.
+Then the card is removed from the game.
+
+--------------------
+Victory Point Cards:
+--------------------
+
+You must keep victory point cards hidden.
+You may only reveal them during your turn and when you are sure that you have 10 victory
+points--that is, to win the game.
+You may play any number of victory point cards during your turn, even during the turn you
+purchase them.
+
+----------------
+Ending the game:
+----------------
+
+If you have 10 or more victory points during your turn, the game ends and you are the
+winner!
+If you reach 10 points when it is not your turn, the game continues until any player
+(including you) has 10 points on his turn.
+

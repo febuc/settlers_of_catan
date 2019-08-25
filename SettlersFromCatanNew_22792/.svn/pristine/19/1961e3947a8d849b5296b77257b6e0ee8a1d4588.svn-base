@@ -1,0 +1,137 @@
+package gameworld;
+
+import application.GameStart;
+import tools.BuildingType;
+import tools.FieldType;
+import tools.Vector2D;
+import tools.Vector3D;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
+/**
+ * Simulates a field object
+ */
+public final class HexagonField extends GameMatrixEntry {
+
+    /**
+     * Defines the coordinate within the scene screen space (in the view)
+     */
+    private Vector2D<Double> scenePosition;
+
+    /**
+     * The 2D fieldCoordinate of this field. The fieldCoordinate represents the
+     * store location inside the world matrix.
+     */
+    private Vector3D<Integer> fieldCoordinate;
+    /**
+     * The type this field represents.
+     */
+    private FieldType fieldType;
+    /**
+     * The "ChipNumber" this field has.
+     */
+    private Integer chipNumber;
+
+    /**
+     * Constructor
+     *
+     * @param fieldCoordinate The 2D coordinates of this field
+     */
+    public HexagonField(Vector3D<Integer> fieldCoordinate) {
+        this.fieldCoordinate = fieldCoordinate;
+        this.fieldType = FieldType.WATER;
+    }
+
+    /**
+     * Defines what kind of a hexagon field we want to have.
+     *
+     * @param fieldType  The field type of this hexagon.
+     * @param chipNumber The ChipNumber for this hexagon.
+     */
+    public void defineHexagonProperties(FieldType fieldType, Integer chipNumber) {
+        this.fieldType = fieldType;
+        this.chipNumber = chipNumber;
+        if(fieldType == FieldType.WATER && GameStart.siedlerVonCatan.getGameWorld().getFields().contains(this))
+            GameStart.siedlerVonCatan.getGameWorld().getFields().remove(this);
+
+    }
+    // Getters & Setters
+
+    /**
+     * Returns the 3D coordinate of this field.
+     *
+     * @return fieldCoordinate
+     */
+    @Override
+    public Vector3D<Integer> getPosition() {
+        return fieldCoordinate;
+    }
+
+    /**
+     * Returns the type of this field.
+     *
+     * @return fieldType
+     */
+    public FieldType getFieldType() {
+        return fieldType;
+    }
+
+    /**
+     * Returns the ChipNumber of this field.
+     *
+     * @return chipNumber
+     */
+    public Integer getChipNumber() {
+        return chipNumber;
+    }
+
+    /**
+     * Returns the position on the view
+     *
+     * @return scenePosition
+     */
+    public Vector2D<Double> getScenePosition() {
+        return scenePosition;
+    }
+
+    /**
+     * Stores the position form the view
+     *
+     * @param scenePosition The position in the view
+     */
+    public void storeScenePosition(Vector2D<Double> scenePosition) {
+        this.scenePosition = scenePosition;
+    }
+
+    /**
+     * Returns an array list of surrounding waypoints.
+     *
+     * @return
+     */
+    public ArrayList<WayPoint> getNeighbourWayPoints() {
+        World matrix = GameStart.siedlerVonCatan.getGameWorld();
+        ArrayList<WayPoint> neighbourWaypoints = new ArrayList<>();
+        for (WayPoint wp : matrix.getWayPoints()) {
+            if (wp.getFieldNeighbours().contains(this))
+                neighbourWaypoints.add(wp);
+        }
+        return neighbourWaypoints;
+    }
+
+    /**
+     * Returns an array list of surrounding waypoints if a settlement exits.
+     *
+     * @return
+     */
+    public ArrayList<WayPoint> getNeighbourWayPointsWithSettlements(Integer excludedID) {
+        World matrix = GameStart.siedlerVonCatan.getGameWorld();
+        ArrayList<WayPoint> neighbourWaypoints = new ArrayList<>();
+        for (WayPoint wp : matrix.getWayPoints()) {
+            if (wp.getSettlement().getBuildingType() != BuildingType.NONE && wp.getFieldNeighbours().contains(this)
+                    && (excludedID == null || wp.getSettlement().getOwnerID() != excludedID))
+                neighbourWaypoints.add(wp);
+        }
+        return neighbourWaypoints;
+    }
+}

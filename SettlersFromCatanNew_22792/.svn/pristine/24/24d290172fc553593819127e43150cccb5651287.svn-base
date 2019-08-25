@@ -1,0 +1,63 @@
+package application;
+
+import Logging.LoggingHolder;
+import gameplay.SiedlerVonCatan;
+import javafx.application.Application;
+import javafx.stage.Stage;
+import networking.Network;
+import sound.SoundManager;
+import view.GameView;
+
+import java.util.logging.Level;
+
+/**
+ * This is the only class containing a main method (which will be executed when the (jar) application starts)
+ */
+public class GameStart extends Application {
+
+    /**
+     * A logger to debug the game.
+     */
+    public static final LoggingHolder mainLogger = new LoggingHolder("DefaultLogger", Level.FINEST);
+    /**
+     * The games game View
+     */
+    public static GameView gameView;
+    /**
+     * The sound manager handles all the sound actions
+     */
+    public static SoundManager soundManager;
+    /**
+     * A reference to the game we are playing on
+     */
+    public static SiedlerVonCatan siedlerVonCatan;
+
+    /**
+     * A manager for our network. Note, that creating a network does and should not imply the initialization of any
+     * connection!
+     */
+    public static Network network;
+
+    /**
+     * Main method which will automatically be executed when the (jar) application starts.
+     * Creates a new main menu and assigns it.
+     *
+     * @param args
+     */
+    public static void main(String[] args) {
+        launch();
+    }
+
+    /**
+     * Sets up game 
+     */
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        //Sound manager should be created first!
+        soundManager = new SoundManager();
+        siedlerVonCatan = new SiedlerVonCatan();
+        gameView = new GameView();
+        //Must be executed as last
+        gameView.startDrawing(primaryStage);
+    }
+}
